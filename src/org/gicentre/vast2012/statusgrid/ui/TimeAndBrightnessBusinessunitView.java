@@ -1,7 +1,5 @@
 package org.gicentre.vast2012.statusgrid.ui;
 
-import java.sql.Timestamp;
-
 import org.gicentre.vast2012.statusgrid.Businessunit;
 import org.gicentre.vast2012.statusgrid.BusinessunitGrid;
 import org.gicentre.vast2012.statusgrid.Facility;
@@ -50,8 +48,8 @@ public class TimeAndBrightnessBusinessunitView extends AbstractBusinessunitView{
 			
 			float norm = 100;
 			
-			for (int t = 192; t >=0; t--) {
-				MachineGroupStatus mgs = mg.statuses.get(ts);
+			for (int t = 191; t >=0; t--) {
+				MachineGroupStatus mgs = mg.statuses[ts];
 
 				// The value that will be drawn
 				float value = -1;

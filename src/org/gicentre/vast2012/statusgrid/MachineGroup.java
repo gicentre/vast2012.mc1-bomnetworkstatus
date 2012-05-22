@@ -13,10 +13,10 @@ public class MachineGroup {
 	short maxConnectionsMax;
 	short maxConnectionsMin;
 	
-	public HashMap<Short, MachineGroupStatus> statuses;
+	public MachineGroupStatus[] statuses;
 
 	public MachineGroup(int machinecount) {
 		this.machinecount = machinecount;
-		statuses = new HashMap<Short, MachineGroupStatus>();
+		statuses = new MachineGroupStatus[192];
 	}
 }

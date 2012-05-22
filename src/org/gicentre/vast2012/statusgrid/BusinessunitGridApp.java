@@ -65,11 +65,14 @@ public class BusinessunitGridApp extends PApplet {
 					dbPassword);
 
 			// Loading all facilities
+//			String[] lines=loadStrings("facility.tab");
+
 			Statement stmt;
 			ResultSet rs;
 
 			stmt = conn.createStatement();
 			rs = stmt.executeQuery("SELECT * from facility");
+			System.out.println("Obtained facilities from db");
 
 			while (rs.next()) {
 				String currentBuName = rs.getString("businessunit");
@@ -96,20 +99,21 @@ public class BusinessunitGridApp extends PApplet {
 			}
 			rs.close();
 			stmt.close();
+			System.out.println("Loaded facilities data");
 
 			// Loading statuses for all facilities
 
 			stmt = conn.createStatement();
 			rs = stmt.executeQuery("SELECT * from facilitystatus-- limit 100000");
-			System.out.println("!");
+			System.out.println("Obtained facilitystatuses from db");
 
-			String[] machineGroupSuffixes = { "", "_atms", "_servers",
-					"_workstations" };
+			//String[] machineGroupSuffixes = { "", "_atms", "_servers",
+			//		"_workstations" };
 
 			while (rs.next()) {
-				String currentBuName = rs.getString("businessunit");
-				String currentFName = rs.getString("facility");
-				short compactTimestamp = CompactTimestamp.FullTimestampToCompact(rs.getTimestamp("timestamp"));
+				String currentBuName = rs.getString(1);
+				String currentFName = rs.getString(2);
+				short compactTimestamp = CompactTimestamp.FullTimestampToCompact(rs.getTimestamp(3));
 				Facility currentF = businessunits.get(currentBuName).facilities
 						.get(currentFName);
 
@@ -118,38 +122,31 @@ public class BusinessunitGridApp extends PApplet {
 
 					for (int i = 0; i < 6; i++)
 						currentMGStatus.countByActivityFlag[i] = rs
-								.getInt("_count_activityflag_" + i
-										+ machineGroupSuffixes[machineGroupId]);
+								.getInt(4 + 24 + machineGroupId + i);
 					for (int i = 0; i < 6; i++)
 						currentMGStatus.countByPolicyStatus[i] = rs
-								.getInt("_count_policystatus_" + i
-										+ machineGroupSuffixes[machineGroupId]);
+								.getInt(4 + machineGroupId + i);
 
 					currentMGStatus.connections[0] = rs
-							.getInt("_count_connections"
-									+ machineGroupSuffixes[machineGroupId]);
+							.getInt(4 + 24 + 24 + machineGroupId); // count
 					currentMGStatus.connections[1] = rs
-							.getInt("_min_connections"
-									+ machineGroupSuffixes[machineGroupId]);
+							.getInt(4 + 24 + 24 + 12 + machineGroupId); // min
 					currentMGStatus.connections[2] = rs
-							.getInt("_max_connections"
-									+ machineGroupSuffixes[machineGroupId]);
+							.getInt(4 + 24 + 24 + 8 + machineGroupId); // max
 					currentMGStatus.connections[3] = rs
-							.getInt("_avg_connections"
-									+ machineGroupSuffixes[machineGroupId]);
+							.getInt(4 + 24 + 24 + 4 + machineGroupId); // avg
 					currentMGStatus.connections[4] = rs
-							.getInt("_sd_connections"
-									+ machineGroupSuffixes[machineGroupId]);
+							.getInt(4 + 24 + 24 + 16 + machineGroupId); // sd
 					
-					currentF.machinegroups[machineGroupId].statuses.put(compactTimestamp, currentMGStatus);
+					currentF.machinegroups[machineGroupId].statuses[compactTimestamp] = currentMGStatus;
 				}
 			}
 			rs.close();
 			stmt.close();
-			System.out.println("!!");
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
+		System.out.println("Loaded facilitystatuses data");
 
 		return businessunits;
 	}
