@@ -1,17 +1,17 @@
-package org.gicentre.vast2012.statusgrid;
+package org.gicentre.vast2012.bomnetworkstatus;
 
 import java.sql.Timestamp;
 import java.util.HashMap;
 
 public class MachineGroup {
 
-	int machinecount;
+	public int machinecount;
 
-	int   maxConnectionsCount;
-	float maxConnectionsAvg;
-	float maxConnectionsSD;
-	short maxConnectionsMax;
-	short maxConnectionsMin;
+	public int   maxConnectionsCount;
+	public float maxConnectionsAvg;
+	public float maxConnectionsSD;
+	public short maxConnectionsMax;
+	public short maxConnectionsMin;
 	
 	public MachineGroupStatus[] statuses;
 

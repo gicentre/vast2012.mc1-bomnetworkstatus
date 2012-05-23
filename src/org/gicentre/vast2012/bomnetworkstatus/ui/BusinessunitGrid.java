@@ -1,13 +1,16 @@
-package org.gicentre.vast2012.statusgrid;
+package org.gicentre.vast2012.bomnetworkstatus.ui;
 
+import java.awt.Rectangle;
 import java.util.HashMap;
+
+import org.gicentre.vast2012.bomnetworkstatus.Businessunit;
 
 public class BusinessunitGrid {
 
-	public static int LAYOUT_GEO = 1;
-	public static int LAYOUT_SEQ = 2;
+	public static final int LAYOUT_GEO = 1;
+	public static final int LAYOUT_SEQ = 2;
 
-	public static int padding = 0;
+	public static int padding = 2;
 	
 	protected int colCount = 0;
 	protected int rowCount = 0;
@@ -15,8 +18,8 @@ public class BusinessunitGrid {
 	protected HashMap<String, Businessunit> businessunits;
 	protected String[][] grid;
 	
-	public float x;
-	public float y;
+	protected float x;
+	protected float y;
 
 	public BusinessunitGrid(HashMap<String, Businessunit> businessunits, int layout) {
 
@@ -29,7 +32,7 @@ public class BusinessunitGrid {
 		if (layout == LAYOUT_SEQ) {
 			
 			colCount = 5;
-			rowCount = 20;
+			rowCount = 17;
 			grid = new String[colCount][rowCount];
 
 			int row = 0;
@@ -78,7 +81,7 @@ public class BusinessunitGrid {
 	public int getCol(String businessunitName) {
 		for (int i = 0; i < getColCount(); i++)
 			for (int j = 0; j < getRowCount(); j++)
-				if (grid[i][j] == businessunitName)
+				if (businessunitName.equals(grid[i][j]))
 					return i;
 		throw new IllegalArgumentException("There is no businessunit with name = "+businessunitName);
 	}
@@ -86,17 +89,17 @@ public class BusinessunitGrid {
 	public int getRow(String businessunitName) {
 		for (int i = 0; i < getColCount(); i++)
 			for (int j = 0; j < getRowCount(); j++)
-				if (grid[i][j] == businessunitName)
+				if (businessunitName.equals(grid[i][j]))
 					return j;
 		throw new IllegalArgumentException("There is no businessunit with name = "+businessunitName);
 	}
 
 	public float getBuX(int col) {
-		return col * (192 + padding) + padding;
+		return col * (192 + padding) + padding + x;
 	}
 
-	public int getBuY(int row) {
-		return row * (51 + padding) + padding;
+	public float getBuY(int row) {
+		return row * (51 + padding) + padding + y;
 	}
 	
 	public float getBuX(String businessunitName) {
@@ -125,11 +128,31 @@ public class BusinessunitGrid {
 		return rowCount;
 	}
 
+	public float getX() {
+		return x;
+	}
+
+	public float getY() {
+		return y;
+	}
+
+	public void setX(float x) {
+		this.x = x;
+	}
+
+	public void setY(float y) {
+		this.y = y;
+	}
+
 	public float getWidth() {
-		return getBuX(rowCount) + padding;
+		return getBuX(colCount) - x + padding;
 	}
 
 	public float getHeight() {
-		return getBuY(colCount) + padding;
+		return getBuY(rowCount) - y + padding;
+	}
+
+	public Rectangle getRectangle() {
+		return new Rectangle((int)x, (int)y, (int)getWidth(), (int)getHeight());
 	}
 }

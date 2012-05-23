@@ -1,4 +1,4 @@
-package org.gicentre.vast2012.statusgrid;
+package org.gicentre.vast2012.bomnetworkstatus;
 
 public class MachineGroupStatus {
 	
