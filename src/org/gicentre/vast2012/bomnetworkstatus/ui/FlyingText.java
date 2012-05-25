@@ -1,22 +1,55 @@
 package org.gicentre.vast2012.bomnetworkstatus.ui;
 
 import java.awt.Font;
-import java.util.Arrays;
+import java.awt.List;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import processing.core.PApplet;
 import processing.core.PFont;
 import processing.core.PGraphics;
-import processing.core.PGraphics2D;
-import processing.core.PImage;
+
+/**
+ * Shows text that "flies" towards a user for a few seconds and then fades out.
+ * 
+ * Usage:
+ * 
+ * FlyingText ft;
+ * 
+ * setup () {
+ *     ft = new FlyingText(this, width/2, height/2);
+ * }
+ * 
+ * draw () {
+ *     ft.draw();
+ * }
+ * 
+ * someEventHappened() {
+ *     ft.startFly("Hello world!");
+ * }
+ * 
+ * somethingCompletelyChangedInTheSketch() {
+ *     ft.stopFly();
+ * }
+ * 
+ */
+
+// TODO Pass font as a constructor parameter
+// TODO Make duration an option
 
 public class FlyingText {
 
-	private PApplet aContext;
-	private float x;
-	private float y;
+	private class FlyingTextInstance {
+		String text = null;
+		int frame = 0;
+	};
 
-	private int frame = 0;
-	private String text = null;
+	protected PApplet aContext;
+	protected float x;
+	protected float y;
+
+	ArrayList<FlyingTextInstance> instances;
 
 	private final int flyingTextMaxOpacity = 180;
 
@@ -24,42 +57,40 @@ public class FlyingText {
 		this.aContext = aContext;
 		this.x = x;
 		this.y = y;
+		instances = new ArrayList<FlyingTextInstance>();
 	}
 
 	public void startFly(String text) {
-		this.text = text;
-		this.frame = 0;
+		FlyingTextInstance newInstance = new FlyingTextInstance();
+		newInstance.text = text;
+		newInstance.frame = 0;
+		instances.add(newInstance);
 	}
 
 	public void stopFly() {
-		this.text = null;
+		instances.clear();
 	}
 
 	public void draw() {
-		if (frame > 60)
-			text = null;
+		for (FlyingTextInstance instance : new CopyOnWriteArrayList<FlyingTextInstance>(instances)) {
+			if (instance.frame > 60)
+				instances.remove(instance);
 
-		if (text == null)
-			return;
+			PFont flyingTextFont = new PFont(new Font("Helvetica", 0, (int) (25 + 0.3f * instance.frame)), true);
+			float opacity = flyingTextMaxOpacity;
+			if (instance.frame < 20)
+				opacity = PApplet.lerp(0, flyingTextMaxOpacity, 0.05f * instance.frame);
+			else if (instance.frame > 30)
+				opacity = PApplet.lerp(flyingTextMaxOpacity, 0, 1 - (60f - instance.frame) / 30f);
 
-		PFont flyingTextFont = new PFont(new Font("Helvetica", 0,
-				(int) (25 + 0.3f * frame)), true);
-		float opacity = flyingTextMaxOpacity;
-		if (frame < 20)
-			opacity = PApplet.lerp(0, flyingTextMaxOpacity, 0.05f * frame);
-		else if (frame > 30)
-			opacity = PApplet.lerp(flyingTextMaxOpacity, 0,
-					1 - (60f - frame) / 30f);
+			aContext.textFont(flyingTextFont);
+			aContext.textAlign(PGraphics.CENTER, PGraphics.BASELINE);
+			aContext.fill(255, opacity * 1.2f);
+			aContext.text(instance.text, x, y);
+			aContext.fill(0, opacity);
+			aContext.text(instance.text, x, y);
 
-		aContext.textFont(flyingTextFont);
-		aContext.textAlign(PGraphics.CENTER, PGraphics.BASELINE);
-		aContext.fill(255, opacity * 1.2f);
-		aContext.text(text, x, y);
-		aContext.fill(0, opacity);
-		aContext.text(text, x, y);
-
-		// Restoring transparent background
-		frame++;
-
+			instance.frame++;
+		}
 	}
 }

@@ -1,25 +1,28 @@
 package org.gicentre.vast2012.bomnetworkstatus.ui;
 
-import java.awt.Rectangle;
 import java.util.HashMap;
-
 import org.gicentre.vast2012.bomnetworkstatus.Businessunit;
 
+/**
+ * The grid is a collection of business units attached to the cells
+ */
 public class BusinessunitGrid {
+
+	public static final int COL_WIDTH = 192;
+	public static final int ROW_HEIGHT = 54;
 
 	public static final int LAYOUT_GEO = 1;
 	public static final int LAYOUT_SEQ = 2;
 
-	public static int padding = 2;
-	
+	public static final int PADDING = 3;
+	public static final int CELLPADDING_H = 4;
+	public static final int CELLPADDING_V = 4;
+
 	protected int colCount = 0;
 	protected int rowCount = 0;
 
 	protected HashMap<String, Businessunit> businessunits;
 	protected String[][] grid;
-	
-	protected float x;
-	protected float y;
 
 	public BusinessunitGrid(HashMap<String, Businessunit> businessunits, int layout) {
 
@@ -28,11 +31,14 @@ public class BusinessunitGrid {
 		setLayout(layout);
 	}
 
+	/**
+	 * Rearranges the business units, ordering them by name or as a spatial tree map
+	 */
 	public void setLayout(int layout) {
 		if (layout == LAYOUT_SEQ) {
-			
+
 			colCount = 5;
-			rowCount = 17;
+			rowCount = 16;
 			grid = new String[colCount][rowCount];
 
 			int row = 0;
@@ -40,7 +46,7 @@ public class BusinessunitGrid {
 
 			// Adding 10 large regions (5*2)
 			for (int id = 1; id <= 10; id++) {
-				addRegionToGrid(col, row, "region-" + id, 201);
+				grid[col][row] = "region-" + id;
 				col++;
 				if (col >= 5) {
 					col = 0;
@@ -50,7 +56,7 @@ public class BusinessunitGrid {
 
 			// Adding 40 small regions (5*8)
 			for (int id = 11; id <= 50; id++) {
-				addRegionToGrid(col, row, "region-" + id, 51);
+				grid[col][row] = "region-" + id;
 				col++;
 				if (col >= 5) {
 					col = 0;
@@ -62,97 +68,110 @@ public class BusinessunitGrid {
 		}
 	}
 
+	/**
+	 * Returns the list of business units
+	 */
 	public HashMap<String, Businessunit> getBusinessunits() {
 		return businessunits;
 	}
 
-	private void addRegionToGrid(int col, int row, String name, int facilityCount) {
-		grid[col][row] = name;
-	}
-
-	public int getRowHeight() {
-		return 51;
-	}
-
-	public int getColWidth() {
-		return 192;
-	}
-
+	/**
+	 * Finds column containing business unit with a given name
+	 */
 	public int getCol(String businessunitName) {
 		for (int i = 0; i < getColCount(); i++)
 			for (int j = 0; j < getRowCount(); j++)
 				if (businessunitName.equals(grid[i][j]))
 					return i;
-		throw new IllegalArgumentException("There is no businessunit with name = "+businessunitName);
+		throw new IllegalArgumentException("There is no businessunit with name = " + businessunitName);
 	}
 
+	/**
+	 * Finds row containing business unit with a given name
+	 */
 	public int getRow(String businessunitName) {
 		for (int i = 0; i < getColCount(); i++)
 			for (int j = 0; j < getRowCount(); j++)
 				if (businessunitName.equals(grid[i][j]))
 					return j;
-		throw new IllegalArgumentException("There is no businessunit with name = "+businessunitName);
+		throw new IllegalArgumentException("There is no businessunit with name = " + businessunitName);
 	}
 
-	public float getBuX(int col) {
-		return col * (192 + padding) + padding + x;
+	/**
+	 * Returns x coordinate of a business unit having a given name
+	 */
+	public int getBusinessunitX(String businessunitName) {
+		return getColX(getCol(businessunitName));
 	}
 
-	public float getBuY(int row) {
-		return row * (51 + padding) + padding + y;
-	}
-	
-	public float getBuX(String businessunitName) {
-		return getBuX(getCol(businessunitName));
-	}
-
-	public float getBuY(String businessunitName) {
-		return getBuY(getRow(businessunitName));
+	/**
+	 * Returns y coordinate of a business unit having a given name
+	 */
+	public int getBusinessunitY(String businessunitName) {
+		return getColY(getRow(businessunitName));
 	}
 
-	public String getBuName(int col, int row) {
+	/**
+	 * Returns name of a business unit located at given column and row (counts start at 0), or null if there the cell is empty
+	 */
+	public String getBusinessunitNameAt(int col, int row) {
 		return grid[col][row];
 	}
-	
-	public Businessunit getBu(int col, int row) {
+
+	/**
+	 * Returns business unit located at given column and row (counts start at 0), or null if there the cell is empty
+	 */
+	public Businessunit getBusinessunitAt(int col, int row) {
 		if (grid[col][row] == null)
 			return null;
 		return businessunits.get(grid[col][row]);
 	}
 
+	/**
+	 * Returns number of the columns in the grid
+	 */
 	public int getColCount() {
 		return colCount;
 	}
 
+	/**
+	 * Returns number of the rows in the grid
+	 */
 	public int getRowCount() {
 		return rowCount;
 	}
 
-	public float getX() {
-		return x;
+	/**
+	 * Returns x coordinate of a given column (count starts at 0)
+	 */
+	public int getColX(int col) {
+		return col * (COL_WIDTH + CELLPADDING_H) + PADDING;
 	}
 
-	public float getY() {
-		return y;
+	/**
+	 * Returns y coordinate of a given row (count starts at 0)
+	 */
+	public int getColY(int row) {
+		return row * (ROW_HEIGHT + CELLPADDING_V) + PADDING;
 	}
 
-	public void setX(float x) {
-		this.x = x;
+	/**
+	 * Returns width of the grid
+	 */
+	public int getWidth() {
+		return getColX(colCount) - CELLPADDING_H + PADDING;
 	}
 
-	public void setY(float y) {
-		this.y = y;
+	/**
+	 * Returns height of the grid
+	 */
+	public int getHeight() {
+		return getColY(rowCount) - CELLPADDING_V + PADDING;
 	}
 
-	public float getWidth() {
-		return getBuX(colCount) - x + padding;
-	}
-
-	public float getHeight() {
-		return getBuY(rowCount) - y + padding;
-	}
-
-	public Rectangle getRectangle() {
-		return new Rectangle((int)x, (int)y, (int)getWidth(), (int)getHeight());
+	public void sortFacilities() {
+		for (Businessunit bu : businessunits.values()) {
+			bu.sortFacilities();
+		}
 	}
 }

@@ -1,8 +1,9 @@
 package org.gicentre.vast2012.bomnetworkstatus;
 
-import java.sql.Timestamp;
-import java.util.HashMap;
-
+/**
+ * Instances of this class aggregate statistics for a machine group (e.g. servers, atms, workstations or all machines in a facility)
+ * over time and also store some meta data (e.g. number of machines in the group)
+ */
 public class MachineGroup {
 
 	public int machinecount;

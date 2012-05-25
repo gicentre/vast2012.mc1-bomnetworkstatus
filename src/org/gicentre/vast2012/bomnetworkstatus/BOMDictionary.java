@@ -93,7 +93,7 @@ public class BOMDictionary {
 				result += "avg";
 				break;
 			case 4:
-				result += "std. dev.";
+				result += "sd";
 				break;
 			}
 		return result;

@@ -1,5 +1,9 @@
 package org.gicentre.vast2012.bomnetworkstatus;
 
+/**
+ * Instances of this class aggregate statistics for a machine group at a given time
+ */
+
 public class MachineGroupStatus {
 	
 	public int[] countByPolicyStatus;

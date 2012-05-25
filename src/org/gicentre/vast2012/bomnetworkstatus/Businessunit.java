@@ -19,6 +19,17 @@ public class Businessunit {
 	}
 
 	public void sortFacilities() {
-		Collections.sort(sortedFacilities);
+		Collections.sort(sortedFacilities, FacilityComparator.getInstance());
+	}
+
+	/**
+	 * Returns the value of the number in the business unit name (for regions only).
+	 * Examples: "region-1" → 42
+	 *           "headquarters" → 0
+	 */
+	public static int extractIdFromName(String businessunitName) {
+		if (businessunitName.charAt(0) == 'r')
+			return Integer.valueOf(businessunitName.substring(7));
+		return 0;
 	}
 }
