@@ -5,12 +5,19 @@ import java.util.Comparator;
 public class FacilityComparator implements Comparator<Facility> {
 
 	public static final int SM_NAME = 0;
-	public static final int SM_TIMEZONE_AND_NAME = 1;
-	public static final int SM_LAT_AND_NAME = 2;
-	public static final int SM_LON_AND_NAME = 3;
+	public static final int SM_TIMEZONE = 1;
+	public static final int SM_LAT = 2;
+	public static final int SM_LON = 3;
 
+	public static final int SM_ACTIVITY_FLAG = 0x10;
+	public static final int SM_POLICY_STATUS = 0x11;
+	public static final int SM_CONNECTIONS = 0x12;
+	
 	public int sortMode = SM_NAME;
+	public int sortSubmode = 0;
 	public boolean sortHeadquarters = true;
+	public short sortComactTimestamp = 0;
+	public int sortMachineGroup = 0;
 	
 	 private static final FacilityComparator instance = new FacilityComparator();
 	 
@@ -37,14 +44,23 @@ public class FacilityComparator implements Comparator<Facility> {
 		int dp = 0;
 
 		switch (sortMode) {
-		case SM_TIMEZONE_AND_NAME:
+		case SM_TIMEZONE:
 			dp = Integer.signum(facility1.timezoneOffset - facility2.timezoneOffset);
 			break;
-		case SM_LAT_AND_NAME:
+		case SM_LAT:
 			dp = -Integer.signum((int) (100000 * (facility1.lat - facility2.lat)));
 			break;
-		case SM_LON_AND_NAME:
+		case SM_LON:
 			dp = Integer.signum((int) (100000 * (facility1.lon - facility2.lon)));
+			break;
+		case SM_ACTIVITY_FLAG:
+			dp = Integer.signum(facility1.machinegroups[sortMachineGroup].statuses[sortComactTimestamp].countByActivityFlag[sortSubmode] - facility2.machinegroups[sortMachineGroup].statuses[sortComactTimestamp].countByActivityFlag[sortSubmode]);
+			break;
+		case SM_POLICY_STATUS:
+			dp = Integer.signum(facility1.machinegroups[sortMachineGroup].statuses[sortComactTimestamp].countByPolicyStatus[sortSubmode] - facility2.machinegroups[sortMachineGroup].statuses[sortComactTimestamp].countByPolicyStatus[sortSubmode]);
+			break;
+		case SM_CONNECTIONS:
+			dp = Integer.signum((int)((facility1.machinegroups[sortMachineGroup].statuses[sortComactTimestamp].connections[sortSubmode] - facility2.machinegroups[sortMachineGroup].statuses[sortComactTimestamp].connections[sortSubmode])*16));
 			break;
 		}
 

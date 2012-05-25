@@ -8,7 +8,6 @@ import org.gicentre.vast2012.bomnetworkstatus.MachineGroupStatus;
 import org.gicentre.vast2012.bomnetworkstatus.ui.BusinessunitGrid;
 
 import processing.core.PGraphics;
-import processing.core.PVector;
 
 public class TimeBUGView extends CommonBUGView {
 
@@ -19,8 +18,7 @@ public class TimeBUGView extends CommonBUGView {
 		super(grid);
 	}
 
-	public void drawBusinessunit(PGraphics canvas, String businessunitName,
-			Thread thread) {
+	public void drawBusinessunit(PGraphics canvas, String businessunitName, Thread thread) {
 		float offsetX = bug.getColX(bug.getCol(businessunitName));
 		float offsetY = bug.getColY(bug.getRow(businessunitName));
 
@@ -33,8 +31,6 @@ public class TimeBUGView extends CommonBUGView {
 		int colourMax = 0;
 		int colourMin = canvas.color(255, 255, 255);
 		int tsWidth = 1;
-		
-		PVector focusedPixel = null;
 
 		// Finding colours
 		switch (currentParameter) {
@@ -50,12 +46,12 @@ public class TimeBUGView extends CommonBUGView {
 		}
 
 		canvas.noStroke();
-		
+
 		for (Facility f : bu.sortedFacilities) {
 			MachineGroup mg = f.machinegroups[currentMachineGroup];
 
-			currentY += getGapBetweenFacilities(prevFacility, f);
-			currentFacilityHeight = getFacilityHeight(f);
+			currentY += bug.getGapBetweenFacilities(prevFacility, f);
+			currentFacilityHeight = bug.getFacilityHeight(f);
 
 			short cts = currentCompactTimestamp;
 
@@ -97,13 +93,10 @@ public class TimeBUGView extends CommonBUGView {
 					canvas.fill(FILL_NODATA);
 				// Data presents and the base is determined
 				else
-					canvas.fill(canvas.lerpColor(colourMin, colourMax, Math
-							.min(1, Math.max(0,
-									((value / valueBase) - baseRangeMin)
-											/ (baseRangeMax - baseRangeMin)))));
+					canvas.fill(canvas.lerpColor(colourMin, colourMax, Math.min(1, Math.max(0, ((value / valueBase) - baseRangeMin) / (baseRangeMax - baseRangeMin)))));
 				// canvas.point(offsetX + t, offsetY + row);
 				canvas.rect(offsetX + t, offsetY + currentY, tsWidth, currentFacilityHeight);
-				
+
 				cts--; // Subtracting 15 minutes
 			}
 			currentY += currentFacilityHeight;
@@ -114,38 +107,41 @@ public class TimeBUGView extends CommonBUGView {
 	public void selectAt(int x, int y) {
 		// Selecting facility
 		super.selectAt(x, y);
-		
+
 		selectedCompactTimestamp = 0;
 		if (selectedFacility == null)
 			return;
-		
+
 		// Selecting timestamp
-		selectedCompactTimestamp = (short) (x - bug.getBusinessunitX(selectedFacility.businessunitName)
-				+ this.currentCompactTimestamp - 191);
+		selectedCompactTimestamp = (short) (x - bug.getBusinessunitX(selectedFacility.businessunitName) + this.currentCompactTimestamp - 191);
 		if (this.timeIsRelative)
 			selectedCompactTimestamp -= selectedFacility.timezoneOffset * 4 + 4 * 3;
 	}
-	
+
 	public void highlightSelectedElement(PGraphics canvas, Thread thread) {
 		if (selectedFacility == null)
 			return;
-		
+
 		int elementX = 0;
 		int elementY = 0;
-		
+
 		Businessunit currentBU = bug.getBusinessunits().get(selectedFacility.businessunitName);
-		
+
 		elementX += selectedCompactTimestamp + 191 - currentCompactTimestamp;
 		if (this.timeIsRelative)
 			elementX += selectedFacility.timezoneOffset * 4 + 4 * 3;
 
-		elementY += currentBU.sortedFacilities.indexOf(selectedFacility);
-		
-		if (elementX < 0 || elementX > 191)
-			return;
-		
-		elementX += (int)bug.getBusinessunitX(currentBU.name);
-		elementY += (int)bug.getBusinessunitY(currentBU.name);
-		drawFocusRect(canvas, elementX, elementY, 1, 1);
+		Facility prevFacility = null;
+		for (Facility f : currentBU.sortedFacilities) {
+			elementY += bug.getGapBetweenFacilities(prevFacility, f);
+			if (f == selectedFacility)
+				break;
+			elementY += bug.getFacilityHeight(f);
+			prevFacility = f;
+		}
+
+		elementX += (int) bug.getBusinessunitX(currentBU.name);
+		elementY += (int) bug.getBusinessunitY(currentBU.name);
+		drawSelectionHighlighter(canvas, elementX, elementY, 1, bug.getFacilityHeight(selectedFacility));
 	}
 }

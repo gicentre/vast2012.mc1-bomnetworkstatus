@@ -14,13 +14,13 @@ import processing.core.PGraphics;
 
 public abstract class CommonBUGView extends AbstractBUGView {
 
-	protected static PFont captionFont = new PFont(new Font("Helvetica", 0, 20), true);
+	protected static PFont captionFont = new PFont(new Font("Helvetica", 0, 18), true);
 	protected BusinessunitGrid bug;
 
 	ColourTable activityFlagCT;
 	ColourTable policyStatusCT;
 	ColourTable connectionCT;
-	
+
 	protected static final int FILL_NODATA = 0; // Colour used when no data presents
 
 	public CommonBUGView(BusinessunitGrid grid) {
@@ -50,7 +50,7 @@ public abstract class CommonBUGView extends AbstractBUGView {
 			for (int j = 0; j < bug.getRowCount(); j++)
 				if (bug.getBusinessunitNameAt(i, j) != null)
 					drawBusinessunit(canvas, bug.getBusinessunitNameAt(i, j), thread);
-		drawCaptions(canvas);
+		drawLabels(canvas);
 	}
 
 	/**
@@ -66,9 +66,12 @@ public abstract class CommonBUGView extends AbstractBUGView {
 	}
 
 	/**
-	 * Draws the captions of the business units
+	 * Draws the labels of the business units
 	 */
-	private void drawCaptions(PGraphics canvas) {
+	protected void drawLabels(PGraphics canvas) {
+		if (!showLabels)
+			return;
+		
 		canvas.textAlign(PApplet.CENTER, PApplet.CENTER);
 		canvas.textFont(captionFont);
 
@@ -77,86 +80,61 @@ public abstract class CommonBUGView extends AbstractBUGView {
 				Businessunit bu = bug.getBusinessunitAt(i, j);
 				if (bu == null)
 					continue;
-				canvas.fill(0, 50);
+				canvas.fill(0, 128);
 				canvas.text(bu.name, bug.getColX(i) + BusinessunitGrid.COL_WIDTH / 2, bug.getColY(j) + BusinessunitGrid.ROW_HEIGHT / 2);
 				canvas.fill(255, 50);
 				canvas.text(bu.name, bug.getColX(i) + BusinessunitGrid.COL_WIDTH / 2, bug.getColY(j) + BusinessunitGrid.ROW_HEIGHT / 2);
 			}
 	}
 
-	protected void drawFocusRect(PGraphics p, int x, int y, int w, int h) {
-		p.noFill();
-		p.stroke(0, 128);
-		p.rect(x - 1, y - 1, w + 2, h + 2);
+	protected void drawArrow(PGraphics canvas, int x, int y, int orientation) {
+		drawArrow(canvas, x, y, orientation, 0);
 	}
-
-	/**
-	 * Returns businessunit height in pixels
-	 * - branch (≈100 machines): 1
-	 * - headqaurters
-	 *     small regions (≈500 machines): 3
-	 *     large regions (≈21K machines): 11
-	 *     headquarters (≈ 15K machines): 8
-	 * - datacenter (≈50K machines): 15
-	 * 
-	 */
-	protected int getBusinessunitHeight(Businessunit businessunit) {
-		if (businessunit.name == "headquarters") {
-			return 42;
-		} else {
-			if (Businessunit.extractIdFromName(businessunit.name) <= 10)
-				return 200 + 2 + 11;
-			else
-				return 50 + 2 + 3;
+	protected void drawArrow(PGraphics canvas, int x, int y, int orientation, int wing) {
+		canvas.pushMatrix();
+		canvas.translate(x, y);
+		
+		switch (orientation) {
+		case PApplet.LEFT:
+			canvas.translate(1, 1);
+			canvas.rotate((float)(Math.PI));
+			break;
+		case PApplet.RIGHT:
+			//canvas.translate(0, 0);
+			break;
 		}
-	}
-	
-	/**
-	 * Returns facility height in pixels
-	 * - branch (≈100 machines): 1
-	 * - headqaurters
-	 *     small regions (≈500 machines): 3
-	 *     large regions (≈21K machines): 11
-	 *     headquarters (≈ 15K machines): 8
-	 * - datacenter (≈50K machines): 15
-	 * 
-	 */
-	protected int getFacilityHeight(Facility f) {
-		switch (f.facilityName.charAt(0)) {
-		case 'b':
-			return 1;
-		case 'h':
-			int buId = Businessunit.extractIdFromName(f.businessunitName);
-			if (buId == 0) {
-				return 8;
-			} else if (buId <= 10) {
-				return 11;
-			} else {
-				return 3;
+
+		canvas.fill(0);
+		canvas.noStroke();
+		for (int i = 1; i < 4; i++) {
+			switch (wing) {
+				case PApplet.LEFT:
+					canvas.rect(i, 0, 1, i);
+					break;
+				case PApplet.RIGHT:
+					canvas.rect(i, 1, 1, -i);
+					break;
+				default:
+					canvas.rect(i, 1 - i, 1, 1 + (i-1)*2);
+					break;
 			}
-		case 'd':
-			return 15;
 		}
-
-		return -1;
+		
+		canvas.popMatrix();
 	}
 
-	/**
-	 * Returns the size of the gap in pixels between two facilities
-	 * Only headquarters are surrounded by a gap of 1 pixel.
-	 */
-	protected int getGapBetweenFacilities(Facility f1, Facility f2) {
-		if (f1 == null || f2 == null)
-			return 0;
-
-		char l1 = f1.facilityName.charAt(0);
-		char l2 = f2.facilityName.charAt(0);
-
-		if (l1 == 'h' || l2 == 'h')
-			return 1;
-		else
-			return 0;
+	protected void drawSelectionHighlighter(PGraphics p, int x, int y, int w, int h) {
+		if (h == 1) {
+			drawArrow(p, x, y, PApplet.LEFT);
+			drawArrow(p, x + w - 1, y, PApplet.RIGHT);
+		} else {
+			drawArrow(p, x + w - 1, y - 1, PApplet.RIGHT, PApplet.RIGHT);
+			drawArrow(p, x + w - 1, y + h, PApplet.RIGHT, PApplet.LEFT);
+			drawArrow(p, x, y - 1, PApplet.LEFT, PApplet.LEFT);
+			drawArrow(p, x, y + h, PApplet.LEFT, PApplet.RIGHT);
+		}
 	}
+
 
 	/**
 	 * {@inheritDoc}
@@ -170,7 +148,7 @@ public abstract class CommonBUGView extends AbstractBUGView {
 		for (int i = 0; i < bug.getColCount(); i++)
 			for (int j = 0; j < bug.getRowCount(); j++)
 				if (bug.getBusinessunitAt(i, j) != null && x >= bug.getColX(i) && x < bug.getColX(i) + BusinessunitGrid.COL_WIDTH && y >= bug.getColY(j)
-						&& y < bug.getColY(j) + getBusinessunitHeight(bug.getBusinessunitAt(i, j))) {
+						&& y < bug.getColY(j) + bug.getBusinessunitHeight(bug.getBusinessunitAt(i, j))) {
 					selectedBU = bug.getBusinessunitAt(i, j);
 					break;
 				}
@@ -181,14 +159,14 @@ public abstract class CommonBUGView extends AbstractBUGView {
 		int localY = y - bug.getBusinessunitY(selectedBU.name);
 		int currentY = 0;
 		Facility prevFacility = null;
-		for (Facility f: selectedBU.sortedFacilities) {
-			currentY += getGapBetweenFacilities(prevFacility, f);
-			
+		for (Facility f : selectedBU.sortedFacilities) {
+			currentY += bug.getGapBetweenFacilities(prevFacility, f);
+
 			// y is in the gap
 			if (currentY > localY)
 				return;
-			currentY += getFacilityHeight(f);
-			
+			currentY += bug.getFacilityHeight(f);
+
 			// y is above the current facility
 			if (currentY > localY) {
 				selectedFacility = f;
@@ -201,6 +179,10 @@ public abstract class CommonBUGView extends AbstractBUGView {
 	protected abstract void drawBusinessunit(PGraphics canvas, String businessunitName, Thread thread);
 
 	public int getColour(int parameter, int value) {
+		return getColour(parameter, value, true);
+	}
+
+	public int getColour(int parameter, int value, boolean relaxed) {
 		ColourTable ct;
 		switch (currentParameter) {
 		case P_ACTIVITYFLAG:
@@ -213,8 +195,34 @@ public abstract class CommonBUGView extends AbstractBUGView {
 			ct = connectionCT;
 			break;
 		}
-		
-		return PApplet.lerpColor(ct.findColour(value), 0x00ffffff, 0.5f, PApplet.BLEND);
+
+		if (relaxed)
+			return PApplet.lerpColor(ct.findColour(value), 0x00ffffff, 0.8f, PApplet.BLEND);
+		else
+			return ct.findColour(value);
 	}
 
+	public boolean selectNeighbourFacility(int diff) {
+		Businessunit bu = bug.getBusinessunits().get(selectedFacility.businessunitName);
+		int pos = bu.sortedFacilities.indexOf(selectedFacility);
+
+		if (pos + diff < 0 || pos + diff >= bu.sortedFacilities.size())
+			return false;
+
+		selectedFacility = bu.sortedFacilities.get(pos + diff);
+		
+		if (timeIsRelative) {
+			selectedCompactTimestamp += (bu.sortedFacilities.get(pos).timezoneOffset - selectedFacility.timezoneOffset)*4;
+		}
+		
+		return true;
+	}
+
+	public boolean selectNeighbourTimestamp(int diff) {
+		if (this instanceof SnapshotBUGView)
+			currentCompactTimestamp += diff;
+		selectedCompactTimestamp += diff;
+		return true;
+	}
+	
 }

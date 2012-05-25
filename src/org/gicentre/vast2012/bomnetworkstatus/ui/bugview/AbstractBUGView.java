@@ -24,6 +24,8 @@ public abstract class AbstractBUGView {
 	public Facility selectedFacility;
 	public short selectedCompactTimestamp;
 	public boolean selectionIsLocked;
+	
+	public boolean showLabels = true;
 
 	/**
 	 * Draws the view
@@ -42,5 +44,15 @@ public abstract class AbstractBUGView {
 	public abstract void highlightSelectedElement(PGraphics canvas, Thread thread);
 
 	public abstract int getColour(int parameter, int value);
+	
+	/**
+	 * If selectedFacility is not null, changes the selection so that another facility located at diff from the original is selected
+	 */
+	public abstract boolean selectNeighbourFacility(int diff);
+
+	/**
+	 * Changes selected timestamp (increments/decrements it by diff)
+	 */
+	public abstract boolean selectNeighbourTimestamp(int diff);
 
 }

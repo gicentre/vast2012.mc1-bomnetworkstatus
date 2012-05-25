@@ -2,6 +2,7 @@ package org.gicentre.vast2012.bomnetworkstatus.ui;
 
 import java.util.HashMap;
 import org.gicentre.vast2012.bomnetworkstatus.Businessunit;
+import org.gicentre.vast2012.bomnetworkstatus.Facility;
 
 /**
  * The grid is a collection of business units attached to the cells
@@ -9,7 +10,7 @@ import org.gicentre.vast2012.bomnetworkstatus.Businessunit;
 public class BusinessunitGrid {
 
 	public static final int COL_WIDTH = 192;
-	public static final int ROW_HEIGHT = 54;
+	public static final int ROW_HEIGHT = 15;
 
 	public static final int LAYOUT_GEO = 1;
 	public static final int LAYOUT_SEQ = 2;
@@ -38,7 +39,7 @@ public class BusinessunitGrid {
 		if (layout == LAYOUT_SEQ) {
 
 			colCount = 5;
-			rowCount = 16;
+			rowCount = 48;
 			grid = new String[colCount][rowCount];
 
 			int row = 0;
@@ -50,7 +51,7 @@ public class BusinessunitGrid {
 				col++;
 				if (col >= 5) {
 					col = 0;
-					row += 4;
+					row += 11;
 				}
 			}
 
@@ -60,9 +61,15 @@ public class BusinessunitGrid {
 				col++;
 				if (col >= 5) {
 					col = 0;
-					row++;
+					row += 3;
 				}
 			}
+
+			// Adding data centres
+			for (int id = 1; id <= 5; id++)
+				grid[id-1][46] = "datacenter-" + id;
+			grid[4][47] = "headquarters";
+
 		} else {
 			throw new RuntimeException("Layout not implemented");
 		}
@@ -125,6 +132,67 @@ public class BusinessunitGrid {
 		if (grid[col][row] == null)
 			return null;
 		return businessunits.get(grid[col][row]);
+	}
+
+	/**
+	 * Returns businessunit height in pixels
+	 */
+	public int getBusinessunitHeight(Businessunit businessunit) {
+		if (businessunit.name.charAt(0) == 'h' || businessunit.name.charAt(0) == 'd') {
+			return ROW_HEIGHT;
+		} else {
+			if (Businessunit.extractIdFromName(businessunit.name) <= 10)
+				return 200 + 2 + 11;
+			else
+				return 50 + 2 + 3;
+		}
+	}
+
+	/**
+	 * Returns facility height in pixels
+	 * - branch (≈100 machines): 1
+	 * - headqaurters
+	 *     small regions (≈500 machines): 2
+	 *     large regions (≈21K machines): 4
+	 *     headquarters (≈ 15K machines): 20
+	 * - datacenter (≈50K machines): 36
+	 * 
+	 */
+	public int getFacilityHeight(Facility f) {
+		switch (f.facilityName.charAt(0)) {
+		case 'b':
+			return 1;
+		case 'h':
+			int buId = Businessunit.extractIdFromName(f.businessunitName);
+			if (buId == 0) {
+				return ROW_HEIGHT;
+			} else if (buId <= 10) {
+				return 4;
+			} else {
+				return 2;
+			}
+		case 'd':
+			return ROW_HEIGHT;
+		}
+
+		return -1;
+	}
+
+	/**
+	 * Returns the size of the gap in pixels between two facilities
+	 * Only headquarters are surrounded by a gap of 1 pixel.
+	 */
+	public int getGapBetweenFacilities(Facility f1, Facility f2) {
+		if (f1 == null || f2 == null)
+			return 0;
+
+		char l1 = f1.facilityName.charAt(0);
+		char l2 = f2.facilityName.charAt(0);
+
+		if (l1 == 'h' || l2 == 'h')
+			return 1;
+		else
+			return 0;
 	}
 
 	/**

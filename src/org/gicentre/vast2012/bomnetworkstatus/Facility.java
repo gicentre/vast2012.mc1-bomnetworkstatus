@@ -10,6 +10,11 @@ public class Facility {
 
 	public String businessunitName;
 	public String facilityName;
+	
+	// Datacentres live in "artificial" businessunits, called as facilities (datacentre-1 ... datacentre-5)
+	// in order to be placed in separate grid cells. businessunitRealName field in this case
+	// is to be equal to "headquarters" and is used in titles if not equal to null
+	public String businessunitRealName;
 
 	public float lat;
 	public float lon;

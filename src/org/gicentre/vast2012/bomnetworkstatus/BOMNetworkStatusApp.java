@@ -9,7 +9,6 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.Statement;
 import java.util.HashMap;
-import java.util.HashSet;
 
 import org.gicentre.utils.gui.HelpScreen;
 import org.gicentre.utils.gui.ThreadedDraw;
@@ -70,10 +69,11 @@ public class BOMNetworkStatusApp extends PApplet {
 		switch (loadStage++) {
 		case 0:
 			helpScreen = new HelpScreen(this, createFont("Helvetica", 12));
-			helpScreen.setHeader("Bank of Money Network status", 30, 20);
+			helpScreen.setHeader("Bank of Money Network Status", 30, 20);
 			helpScreen.putEntry("H", "Show this help");
 			helpScreen.addSpacer();
 			helpScreen.putEntry("A", "Show activity flag in the grid. Press together with 0-5 in time view mode to select a activity flag.");
+			helpScreen.putEntry("L", "Toggle labels on the grid");
 			helpScreen.putEntry("M + 0-3", "Choose between statistics for: 0 - all machines, 1 - ATMs, 2 - servers, 3 - workstations in the grid.");
 			helpScreen.putEntry("P", "Show policy status in the grid. Press together with 0-5 in time view mode to select a particular policy status.");
 			helpScreen.putEntry("R", "Reset pan and zoom of the grid");
@@ -82,7 +82,7 @@ public class BOMNetworkStatusApp extends PApplet {
 			helpScreen.putEntry("T", "Toggle gloabal/local time in the grid (time view only)");
 			helpScreen.putEntry("V", "Toggle temporal / snapshot view");
 			helpScreen.putEntry("ESC", "Deselect currently selected facility");
-			helpScreen.putEntry("← →", "± 15 minutes (press with shift for ± 1 hour)");
+			helpScreen.putEntry("← →", "± 15 minutes (press with SHIFT for ± 1 hour, with CONTROL for ± 1 day)");
 
 			return;
 		case 1:
@@ -95,6 +95,8 @@ public class BOMNetworkStatusApp extends PApplet {
 		case 2:
 			// Loading the data
 			businessunits = loadFaclityStatusData();
+			fill(0, 95);
+			textAlign(CENTER, CENTER);
 			text("Preparing the grid...", width / 2, height / 2 + HS_HEIGHT / 2);
 			helpScreen.draw();
 			return;
@@ -107,6 +109,7 @@ public class BOMNetworkStatusApp extends PApplet {
 			snapshotView = new SnapshotBUGView(businessunitGrid);
 			snapshotView.currentParameter = AbstractBUGView.P_POLICYSTATUS;
 			snapshotView.currentCompactTimestamp = CompactTimestamp.fullTimestampToCompact("2012-02-02 14:00:00");
+			snapshotView.selectedCompactTimestamp = snapshotView.currentCompactTimestamp;
 
 			// Time view
 			timeView = new TimeBUGView(businessunitGrid);
@@ -128,7 +131,10 @@ public class BOMNetworkStatusApp extends PApplet {
 			flyingText = new FlyingText(this, (float) (gridGraphicBufferBounds.getX() + businessunitGrid.getWidth() / 2),
 					(float) (gridGraphicBufferBounds.getY() + businessunitGrid.getHeight() / 2));
 
-			text("Almost done...", width / 2, height / 2);
+			fill(0, 95);
+			textAlign(CENTER, CENTER);
+			text("Almost done...", width / 2, height / 2 + HS_HEIGHT / 2);
+			helpScreen.draw();
 			return;
 		}
 
@@ -140,8 +146,13 @@ public class BOMNetworkStatusApp extends PApplet {
 		rect(gridGraphicBufferBounds.x, gridGraphicBufferBounds.y, gridGraphicBufferBounds.width, gridGraphicBufferBounds.height);
 
 		gridGraphicBuffer.draw();
-		if (timeView.selectionIsLocked)
-			timeView.highlightSelectedElement(this.g, null);
+		if (currentView.selectionIsLocked) {
+			pushMatrix();
+			gridZoomPan.transform(this.g);
+			translate(gridGraphicBufferBounds.x, gridGraphicBufferBounds.y);
+			currentView.highlightSelectedElement(this.g, null);
+			popMatrix();
+		}
 		drawTitle();
 		drawLegend();
 		drawTimeline();
@@ -216,13 +227,13 @@ public class BOMNetworkStatusApp extends PApplet {
 		textAlign(LEFT);
 		text(f.lat < 0 ? " S" : " N,", 120, 45);
 		text(" W", 200, 45);
-		
+
 		// IP range
 		text("IP range: ", 0, 60);
 		// Machine count
 		text(BOMDictionary.machineGroupToHR(currentView.currentMachineGroup) + " count: " + mg.machinecount
 				+ (currentView.currentMachineGroup != 0 ? " (out of " + f.machinegroups[0].machinecount + ")" : ""), 0, 75);
-		
+
 		// Time
 		String tsHRAbs = CompactTimestamp.toHRString(currentView.selectedCompactTimestamp);
 		String tsHRLoc = CompactTimestamp.toHRString(currentView.selectedCompactTimestamp, f.timezoneOffset);
@@ -235,7 +246,7 @@ public class BOMNetworkStatusApp extends PApplet {
 		text(tsHRAbs, 0, 105);
 		text(tsHRLoc, tsHRLocX, 120);
 		fill(120);
-		
+
 		translate(0, 150);
 		ellipseMode(CORNER);
 
@@ -331,7 +342,7 @@ public class BOMNetworkStatusApp extends PApplet {
 
 				if (i == 3)
 					translate(140, -30);
-				
+
 				// value
 				fill(0, 120);
 				textAlign(LEFT);
@@ -355,6 +366,7 @@ public class BOMNetworkStatusApp extends PApplet {
 				return keys[i];
 		return false;
 	}
+
 	boolean checkKey(int k) {
 		return keys[k];
 	}
@@ -364,6 +376,67 @@ public class BOMNetworkStatusApp extends PApplet {
 			return;
 
 		keys[keyCode] = true;
+
+		// Facility sort order: 1 - name, 2 - timezone and name, 3 - lat, 4 - lon ' '  or a parameter
+		if (checkKey("s")) {
+			FacilityComparator fc = FacilityComparator.getInstance();
+
+			// Sorting by a parameter
+			if (checkKey("a") || checkKey("p") || checkKey("c")) {
+				if (keyCode >= '0' && keyCode <= '5') {
+					if (checkKey("a")) {
+						fc.sortMode = FacilityComparator.SM_ACTIVITY_FLAG;
+						flyingText.startFly("Sort facilities by activity flag = " + BOMDictionary.activityFlagToHR(keyCode - 0x30) + "");
+					} else if (checkKey("p")) {
+						fc.sortMode = FacilityComparator.SM_POLICY_STATUS;
+						flyingText.startFly("Sort facilities by policy status = " + BOMDictionary.policyStatusToHR(keyCode - 0x30) + "");
+					} else if (checkKey("c")) {
+						if (keyCode == 0 || keyCode == 5)
+							return;
+						fc.sortMode = FacilityComparator.SM_CONNECTIONS;
+						flyingText.startFly("Sort facilities by " + BOMDictionary.connectionsToHR(keyCode - 0x30) + " connections");
+					}
+
+					fc.sortSubmode = keyCode - 0x30;
+					fc.sortMachineGroup = currentView.currentMachineGroup;
+					fc.sortComactTimestamp = currentView.selectedCompactTimestamp >= 0 ? currentView.selectedCompactTimestamp : currentView.currentCompactTimestamp;
+					
+					businessunitGrid.sortFacilities();
+				}
+
+			} else {
+
+				if (keyCode >= '1' && keyCode <= '4') {
+					fc.sortMode = keyCode - 0x31;
+					switch (fc.sortMode) {
+					case FacilityComparator.SM_NAME:
+						flyingText.startFly("Sort facilities by name");
+						break;
+					case FacilityComparator.SM_TIMEZONE:
+						flyingText.startFly("Sort facilities by time zone");
+						break;
+					case FacilityComparator.SM_LAT:
+						flyingText.startFly("Sort facilities by latitude (N↘S)");
+						break;
+					case FacilityComparator.SM_LON:
+						flyingText.startFly("Sort facilities by longitude (W↘E)");
+						break;
+					}
+					businessunitGrid.sortFacilities();
+				} else if (key == ' ') {
+					fc.sortHeadquarters = !fc.sortHeadquarters;
+
+					if (fc.sortHeadquarters)
+						flyingText.startFly("Include headquarters when sorting");
+					else
+						flyingText.startFly("Exclude headquarters when sorting");
+					businessunitGrid.sortFacilities();
+				}
+			}
+			gridGraphicBuffer.setUpdateFlag();
+			mouseMoved();
+			return;
+		}
 
 		// Toggle timezone alignment
 		if (key == 't' && currentView == timeView) {
@@ -424,39 +497,17 @@ public class BOMNetworkStatusApp extends PApplet {
 			return;
 		}
 
-		// Facility sort order: 1 - name, 2 - timezone and name, 3 - lat, 4 - lon ''
-		if (checkKey("s")) {
-			FacilityComparator fc = FacilityComparator.getInstance();
-			if (keyCode >= '1' && keyCode <= '4') {
-				fc.sortMode = keyCode - 0x31;
-				switch (fc.sortMode) {
-				case FacilityComparator.SM_NAME:
-					flyingText.startFly("Sort facilities by name");
-					break;
-				case FacilityComparator.SM_TIMEZONE_AND_NAME:
-					flyingText.startFly("Sort facilities by time zone");
-					break;
-				case FacilityComparator.SM_LAT_AND_NAME:
-					flyingText.startFly("Sort facilities by latitude (N↘S)");
-					break;
-				case FacilityComparator.SM_LON_AND_NAME:
-					flyingText.startFly("Sort facilities by longitude (W↘E)");
-					break;
-				}
-				businessunitGrid.sortFacilities();
-			} else if (key == ' ') {
-				fc.sortHeadquarters = !fc.sortHeadquarters;
-
-				if (fc.sortHeadquarters)
-					flyingText.startFly("Include headquarters when sorting");
-				else
-					flyingText.startFly("Exclude headquarters when sorting");
-				businessunitGrid.sortFacilities();
-			}
+		// Show/hide labels on the grid
+		if (key == 'l') {
+			currentView.showLabels = !currentView.showLabels;
+			if (currentView.showLabels)
+				flyingText.startFly("Show labels on grid");
+			else
+				flyingText.startFly("Hide labels on grid");
 			gridGraphicBuffer.setUpdateFlag();
-			mouseMoved();
 			return;
 		}
+
 
 		// Reset View
 		if (key == 'r') {
@@ -470,9 +521,27 @@ public class BOMNetworkStatusApp extends PApplet {
 		// Toggle view (temporal / snapshot)
 		if (key == 'v') {
 			if (currentView == timeView) {
+				if (timeView.selectionIsLocked) {
+					snapshotView.selectedFacility = timeView.selectedFacility;
+					snapshotView.selectedCompactTimestamp = timeView.selectedCompactTimestamp;
+					snapshotView.currentCompactTimestamp = snapshotView.selectedCompactTimestamp;
+					snapshotView.selectionIsLocked = true;
+					snapshotView.showLabels = timeView.showLabels;
+				} else {
+					snapshotView.selectionIsLocked = false;
+				}
 				currentView = snapshotView;
 				flyingText.startFly("Snapshot view");
 			} else {
+				if (snapshotView.selectionIsLocked) {
+					timeView.selectedFacility = snapshotView.selectedFacility;
+					timeView.selectedCompactTimestamp = snapshotView.selectedCompactTimestamp;
+					timeView.selectionIsLocked = true;
+					timeView.showLabels = snapshotView.showLabels;
+				} else {
+					timeView.selectionIsLocked = false;
+
+				}
 				currentView = timeView;
 				flyingText.startFly("Timeline view");
 			}
@@ -480,38 +549,42 @@ public class BOMNetworkStatusApp extends PApplet {
 			return;
 		}
 
-		// Time +
-		if (keyCode == RIGHT) {
-			int dt = 1;
-			if (checkKey(SHIFT))
-				dt = 4;
-			if (currentView == snapshotView) {
-				currentView.currentCompactTimestamp += dt;
-				currentView.selectedCompactTimestamp += dt;
-				flyingText.startFly(dt == 1 ? "+ 15 min" : "+ 1 hr");
+		// Facility ±
+		if (keyCode == UP || keyCode == DOWN) {
+			int df = keyCode == DOWN ? 1 : -1;
+			if (currentView.selectedFacility == null)
+				return;
+			if (currentView.selectNeighbourFacility(df)) {
+				gridGraphicBuffer.setUpdateFlag();
+				flyingText.startFly(df > 0 ? "Next facility" : "Previous facility");
+				mouseMoved();
 			}
-			gridGraphicBuffer.setUpdateFlag();
-			mouseMoved();
 			return;
 		}
-		// Time -
-		if (keyCode == LEFT) {
-			int dt = 1;
-			if (checkKey(SHIFT))
-				dt = 4;
-			if (currentView == snapshotView) {
-				currentView.currentCompactTimestamp -= dt;
-				currentView.selectedCompactTimestamp -= dt;
-				flyingText.startFly(dt == 1 ? "- 15 min" : "- 1 hr");
+
+		// Time ±
+		if (keyCode == RIGHT || keyCode == LEFT) {
+			int dt = keyCode == RIGHT ? 1 : -1;
+			String label = "15 minunites";
+			if (checkKey(SHIFT)) {
+				dt *= 4;
+				label = "1 hour";
+			} else if (checkKey(CONTROL)) {
+				dt *= 4*24;
+				label = "1 day";
 			}
-			gridGraphicBuffer.setUpdateFlag();
-			mouseMoved();
+			if (currentView.selectNeighbourTimestamp(dt)) {
+				flyingText.startFly((dt < 0 ? "- ": "+ ") + label);
+				gridGraphicBuffer.setUpdateFlag();
+				mouseMoved();
+			}
 			return;
 		}
 
 		// Unlock focus
 		if (key == ESC) {
 			timeView.selectionIsLocked = false;
+			snapshotView.selectionIsLocked = false;
 			mouseMoved();
 			key = 0; // Prevent applet from closing
 			return;
@@ -557,8 +630,10 @@ public class BOMNetworkStatusApp extends PApplet {
 		if (loadStage < 42)
 			return;
 		if (gridGraphicBufferBounds.contains(mouseX, mouseY)) {
-			timeView.selectAt(mouseX, mouseY);
-			timeView.selectionIsLocked = true;
+			PVector mouseCoordWithOffset = new PVector(mouseX, mouseY);
+			PVector convertedMouseCoord = gridZoomPan.getZoomPanState().getDispToCoord(mouseCoordWithOffset);
+			currentView.selectAt((int) convertedMouseCoord.x - gridGraphicBufferBounds.x, (int) convertedMouseCoord.y - gridGraphicBufferBounds.y);
+			currentView.selectionIsLocked = currentView.selectedFacility != null;
 		}
 	}
 
@@ -582,18 +657,26 @@ public class BOMNetworkStatusApp extends PApplet {
 				} else {
 					String[] tokens = split(line, TAB);
 					String currentBuName = tokens[0];
+					String currentBuRealName = null;
 					String currentFName = tokens[1];
+
+					// Hack for business unit name to have data centres in different cells. See Facility.businessunitRealName
+					if (currentBuName.equals("headquarters")) {
+						currentBuRealName = currentBuName;
+						currentBuName = currentFName;
+					}
 
 					Businessunit currentBu = businessunits.get(currentBuName);
 					if (currentBu == null) {
 						currentBu = new Businessunit(currentBuName);
 						businessunits.put(currentBuName, currentBu);
 					}
-
+					
 					Facility currentF = new Facility();
 					currentBu.facilities.put(currentFName, currentF);
 					currentBu.sortedFacilities.add(currentF);
 					currentF.businessunitName = currentBuName;
+					currentF.businessunitRealName = currentBuRealName;
 					currentF.facilityName = currentFName;
 					currentF.lat = Float.valueOf(tokens[2]);
 					currentF.lon = Float.valueOf(tokens[3]);
@@ -609,7 +692,7 @@ public class BOMNetworkStatusApp extends PApplet {
 
 			// Reading statuses for all facilities
 			reader = createReader("facilitystatus.tab");
-			//reader = createReader("facilitystatus_short.tab");
+			// reader = createReader("facilitystatus_short.tab");
 			// Skipping the first line with headers
 			reader.readLine();
 
@@ -623,6 +706,11 @@ public class BOMNetworkStatusApp extends PApplet {
 					String currentBuName = tokens[0];
 					String currentFName = tokens[1];
 					short compactTimestamp = CompactTimestamp.fullTimestampToCompact(tokens[2]);
+					
+					// Hack for business unit name to have data centres in different cells. See Facility.businessunitRealName
+					if (currentBuName.equals("headquarters"))
+						currentBuName = currentFName;
+					
 					if (businessunits.get(currentBuName) == null)
 						continue;
 					Facility currentF = businessunits.get(currentBuName).facilities.get(currentFName);

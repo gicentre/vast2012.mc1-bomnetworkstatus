@@ -43,8 +43,8 @@ public class SnapshotBUGView extends CommonBUGView {
 		for (Facility f : bu.sortedFacilities) {
 			MachineGroup mg = f.machinegroups[currentMachineGroup];
 
-			currentY += getGapBetweenFacilities(prevFacility, f);
-			currentFacilityHeight = getFacilityHeight(f);
+			currentY += bug.getGapBetweenFacilities(prevFacility, f);
+			currentFacilityHeight = bug.getFacilityHeight(f);
 
 			short ts = currentCompactTimestamp;
 
@@ -91,7 +91,7 @@ public class SnapshotBUGView extends CommonBUGView {
 
 						// Drawing the bars
 						for (int i = 0; i <= 5; i++) {
-							canvas.fill(currentCT.findColour(i) & 0x88ffffff); // add ≈ 50 alpha
+							canvas.fill(currentCT.findColour(i) & 0xaaffffff); // add ≈ 60 alpha
 							canvas.rect(offsetX + offsetX2, offsetY + currentY, widthInPx[i], currentFacilityHeight);
 							offsetX2 += widthInPx[i];
 						}
@@ -104,5 +104,25 @@ public class SnapshotBUGView extends CommonBUGView {
 	}
 
 	public void highlightSelectedElement(PGraphics canvas, Thread thread) {
+		if (selectedFacility == null)
+			return;
+		
+		int elementX = 0;
+		int elementY = 0;
+		
+		Businessunit currentBU = bug.getBusinessunits().get(selectedFacility.businessunitName);
+		
+		Facility prevFacility = null;
+		for (Facility f : currentBU.sortedFacilities) {
+			elementY += bug.getGapBetweenFacilities(prevFacility, f);
+			if (f == selectedFacility)
+				break;
+			elementY += bug.getFacilityHeight(f);
+			prevFacility = f;
+		}
+		
+		elementX += bug.getBusinessunitX(currentBU.name);
+		elementY += bug.getBusinessunitY(currentBU.name);
+		drawSelectionHighlighter(canvas, elementX, elementY, 192, bug.getFacilityHeight(selectedFacility));
 	}
 }

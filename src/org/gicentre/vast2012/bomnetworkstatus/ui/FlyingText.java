@@ -1,9 +1,7 @@
 package org.gicentre.vast2012.bomnetworkstatus.ui;
 
 import java.awt.Font;
-import java.awt.List;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import processing.core.PApplet;
@@ -64,7 +62,7 @@ public class FlyingText {
 		FlyingTextInstance newInstance = new FlyingTextInstance();
 		newInstance.text = text;
 		newInstance.frame = 0;
-		instances.add(newInstance);
+		instances.add(0, newInstance);
 	}
 
 	public void stopFly() {
