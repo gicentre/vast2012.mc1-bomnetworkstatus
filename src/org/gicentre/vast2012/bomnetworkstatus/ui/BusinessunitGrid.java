@@ -70,8 +70,42 @@ public class BusinessunitGrid {
 				grid[id-1][46] = "datacenter-" + id;
 			grid[4][47] = "headquarters";
 
+		} else if (layout == LAYOUT_GEO) {
+			colCount = 5;
+			rowCount = 48;
+			grid = new String[colCount][rowCount];
+
+			int row = 0;
+			int col = 0;
+
+			// Adding 40 small regions (5*8)
+			for (int id = 11; id <= 50; id++) {
+				grid[4 - col][row] = "region-" + id;
+				col++;
+				if (col >= 5) {
+					col = 0;
+					row += 3;
+				}
+			}
+
+			// Adding 10 large regions (5*2)
+			for (int id = 1; id <= 10; id++) {
+				grid[4 - col][row] = "region-" + id;
+				col++;
+				if (col >= 5) {
+					col = 0;
+					row += 11;
+				}
+			}
+
+			// Adding data centres
+			for (int id = 1; id <= 5; id++)
+				grid[id-1][46] = "datacenter-" + (6-id);
+			grid[2][46] = "headquarters";
+			grid[2][47] = "datacenter-3";
+			
 		} else {
-			throw new RuntimeException("Layout not implemented");
+			throw new RuntimeException("Grod layout not implemented");
 		}
 	}
 
@@ -142,9 +176,9 @@ public class BusinessunitGrid {
 			return ROW_HEIGHT;
 		} else {
 			if (Businessunit.extractIdFromName(businessunit.name) <= 10)
-				return 200 + 2 + 11;
+				return 200 + 2 + 4;
 			else
-				return 50 + 2 + 3;
+				return 50 + 2 + 2;
 		}
 	}
 

@@ -21,7 +21,7 @@ public abstract class CommonBUGView extends AbstractBUGView {
 	ColourTable policyStatusCT;
 	ColourTable connectionCT;
 
-	protected static final int FILL_NODATA = 0; // Colour used when no data presents
+	protected static final int FILL_NODATA = 240; // Colour used when no data presents
 
 	public CommonBUGView(BusinessunitGrid grid) {
 		bug = grid;
@@ -197,19 +197,26 @@ public abstract class CommonBUGView extends AbstractBUGView {
 		}
 
 		if (relaxed)
-			return PApplet.lerpColor(ct.findColour(value), 0x00ffffff, 0.8f, PApplet.BLEND);
+			return PApplet.lerpColor(ct.findColour(value), 0x00ffffff, 0.5f, PApplet.BLEND);
 		else
 			return ct.findColour(value);
 	}
 
 	public boolean selectNeighbourFacility(int diff) {
 		Businessunit bu = bug.getBusinessunits().get(selectedFacility.businessunitName);
-		int pos = bu.sortedFacilities.indexOf(selectedFacility);
-
-		if (pos + diff < 0 || pos + diff >= bu.sortedFacilities.size())
+		int oldPos = bu.sortedFacilities.indexOf(selectedFacility);
+		int pos = oldPos + diff;
+		
+		if (pos < 0)
+			pos = 0;
+		
+		if (pos >= bu.sortedFacilities.size())
+			pos = bu.sortedFacilities.size() - 1;
+		
+		if (pos == oldPos)
 			return false;
 
-		selectedFacility = bu.sortedFacilities.get(pos + diff);
+		selectedFacility = bu.sortedFacilities.get(pos);
 		
 		if (timeIsRelative) {
 			selectedCompactTimestamp += (bu.sortedFacilities.get(pos).timezoneOffset - selectedFacility.timezoneOffset)*4;

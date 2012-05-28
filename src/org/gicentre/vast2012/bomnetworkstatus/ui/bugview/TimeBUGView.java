@@ -11,9 +11,14 @@ import processing.core.PGraphics;
 
 public class TimeBUGView extends CommonBUGView {
 
-	public float baseRangeMin = 0;
-	public float baseRangeMax = 1;
-
+	public boolean rangeIsLocked = false;
+	public float rangeMin = 0;
+	public float rangeMax = 1;
+	public float rangeMinLimit = 0;
+	public float rangeMaxLimit = 1;
+	
+	public boolean rangeIsAbsolute = false;
+	
 	public TimeBUGView(BusinessunitGrid grid) {
 		super(grid);
 	}
@@ -28,22 +33,9 @@ public class TimeBUGView extends CommonBUGView {
 		int currentFacilityHeight;
 		Facility prevFacility = null;
 
-		int colourMax = 0;
+		int colourMax = getColour(currentParameter, currentValue, false);
 		int colourMin = canvas.color(255, 255, 255);
 		int tsWidth = 1;
-
-		// Finding colours
-		switch (currentParameter) {
-		case P_ACTIVITYFLAG:
-			colourMax = activityFlagCT.findColour(currentValue);
-			break;
-		case P_POLICYSTATUS:
-			colourMax = policyStatusCT.findColour(currentValue);
-			break;
-		case P_CONNECTIONS:
-			colourMax = connectionCT.findColour(currentValue);
-			break;
-		}
 
 		canvas.noStroke();
 
@@ -93,7 +85,7 @@ public class TimeBUGView extends CommonBUGView {
 					canvas.fill(FILL_NODATA);
 				// Data presents and the base is determined
 				else
-					canvas.fill(canvas.lerpColor(colourMin, colourMax, Math.min(1, Math.max(0, ((value / valueBase) - baseRangeMin) / (baseRangeMax - baseRangeMin)))));
+					canvas.fill(canvas.lerpColor(colourMin, colourMax, Math.min(1, Math.max(0, ((value / valueBase) - rangeMin) / (rangeMax - rangeMin)))));
 				// canvas.point(offsetX + t, offsetY + row);
 				canvas.rect(offsetX + t, offsetY + currentY, tsWidth, currentFacilityHeight);
 
@@ -140,8 +132,45 @@ public class TimeBUGView extends CommonBUGView {
 			prevFacility = f;
 		}
 
+		if (elementX < 0 || elementX >= 192)
+			return;
+		
 		elementX += (int) bug.getBusinessunitX(currentBU.name);
 		elementY += (int) bug.getBusinessunitY(currentBU.name);
 		drawSelectionHighlighter(canvas, elementX, elementY, 1, bug.getFacilityHeight(selectedFacility));
 	}
+
+	public void drawLegend(PGraphics canvas, float x, float y, float width, float height) {
+		canvas.pushMatrix();
+		canvas.translate(x, y);
+		
+		String t1, t2;
+		
+		if (rangeIsAbsolute) {
+			t1 = String.valueOf((int)rangeMin);
+			t2 = String.valueOf((int)rangeMax);
+		} else {
+			t1 = String.valueOf((int)(rangeMin*100)) + "%";
+			t2 = String.valueOf((int)(rangeMax*100)) + "%";
+		}
+		
+		canvas.fill(120);
+		canvas.textAlign(PGraphics.LEFT, PGraphics.TOP);
+		canvas.text(t1, 0, 0);
+		canvas.textAlign(PGraphics.RIGHT, PGraphics.TOP);
+		canvas.text(t2, width, 0);
+		
+		canvas.noStroke();
+		int colourMax = getColour(currentParameter, currentValue, false);
+		int colourMin = canvas.color(255, 255, 255);
+		
+		for (float i = 0; i< width; i++) {
+			canvas.fill(canvas.lerpColor(colourMin, colourMax,i/width));
+			canvas.rect(i, 16, 1, height-16);
+		}
+		
+		canvas.popMatrix();
+	}
+
+
 }

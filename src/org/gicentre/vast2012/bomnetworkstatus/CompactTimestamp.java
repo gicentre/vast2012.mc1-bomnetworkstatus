@@ -17,6 +17,7 @@ public class CompactTimestamp {
 	protected static long compactTimestampEpochDiff = 60 * 15; // 15 mins between times
 
 	protected static SimpleDateFormat datetimeFormatter = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+	protected static SimpleDateFormat datetimeFormatterNoSec = new SimpleDateFormat("yyyy-MM-dd HH:mm");
 
 	/**
 	 * Converts "classic" time stamp (long number, with milliseconds) to CompactTimestamp format (number, short)
@@ -55,7 +56,7 @@ public class CompactTimestamp {
 	 * Converts compact timestamp to a human-readable format
 	 */
 	public static String toHRString(short compactTimestamp, int timezoneOffset) {
-		String result = datetimeFormatter.format(new Date(1000 * (compactTimestamp * compactTimestampEpochDiff + compactTimestampEpochStart + timezoneOffset*60*60)));
+		String result = datetimeFormatterNoSec.format(new Date(1000 * (compactTimestamp * compactTimestampEpochDiff + compactTimestampEpochStart + timezoneOffset*60*60)));
 		
 		if (timezoneOffset == 0)
 			result += " BMT";

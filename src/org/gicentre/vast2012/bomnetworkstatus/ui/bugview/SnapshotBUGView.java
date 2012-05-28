@@ -125,4 +125,8 @@ public class SnapshotBUGView extends CommonBUGView {
 		elementY += bug.getBusinessunitY(currentBU.name);
 		drawSelectionHighlighter(canvas, elementX, elementY, 192, bug.getFacilityHeight(selectedFacility));
 	}
+	
+	public void drawLegend(PGraphics canvas, float x, float y, float width, float height) {
+	}
+
 }

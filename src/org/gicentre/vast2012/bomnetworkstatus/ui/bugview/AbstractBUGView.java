@@ -43,6 +43,8 @@ public abstract class AbstractBUGView {
 
 	public abstract void highlightSelectedElement(PGraphics canvas, Thread thread);
 
+	public abstract void drawLegend(PGraphics canvas, float x, float y, float width, float height);
+
 	public abstract int getColour(int parameter, int value);
 	
 	/**

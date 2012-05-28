@@ -1,5 +1,6 @@
 package org.gicentre.vast2012.bomnetworkstatus;
 
+import java.awt.Font;
 import java.awt.Rectangle;
 import java.awt.event.KeyEvent;
 import java.io.BufferedReader;
@@ -18,6 +19,7 @@ import org.gicentre.utils.move.ZoomPanState;
 import org.gicentre.vast2012.bomnetworkstatus.ui.BusinessunitGrid;
 import org.gicentre.vast2012.bomnetworkstatus.ui.FlyingText;
 import org.gicentre.vast2012.bomnetworkstatus.ui.bugview.AbstractBUGView;
+import org.gicentre.vast2012.bomnetworkstatus.ui.bugview.OverallView;
 import org.gicentre.vast2012.bomnetworkstatus.ui.bugview.SnapshotBUGView;
 import org.gicentre.vast2012.bomnetworkstatus.ui.bugview.TimeBUGView;
 
@@ -42,16 +44,19 @@ public class BOMNetworkStatusApp extends PApplet {
 
 	FlyingText flyingText;
 	HelpScreen helpScreen;
-	final int HS_HEIGHT = 300;
+	final int HS_HEIGHT = 500;
 
 	TimeBUGView timeView;
 	SnapshotBUGView snapshotView;
+	OverallView overallView;
 	AbstractBUGView currentView;
 
 	PFont titleFont;
 	PFont subtitleFont;
 	PFont selectedInfoFont;
+	PFont bottomRowFont;
 	boolean[] keys = new boolean[526];
+	String sortText = null;
 
 	public void setup() {
 
@@ -59,6 +64,7 @@ public class BOMNetworkStatusApp extends PApplet {
 		titleFont = createFont("Helvetica", 20);
 		subtitleFont = createFont("Helvetica", 16);
 		selectedInfoFont = createFont("Arial", 14);
+		bottomRowFont = createFont("Arial", 12);
 		// smooth();
 	}
 
@@ -69,20 +75,32 @@ public class BOMNetworkStatusApp extends PApplet {
 		switch (loadStage++) {
 		case 0:
 			helpScreen = new HelpScreen(this, createFont("Helvetica", 12));
+			helpScreen.setBackgroundColour(0xf0fffb9d);
+			helpScreen.setIsActive(true);
 			helpScreen.setHeader("Bank of Money Network Status", 30, 20);
-			helpScreen.putEntry("H", "Show this help");
+			helpScreen.putEntry("H", "Show / hide this help");
 			helpScreen.addSpacer();
-			helpScreen.putEntry("A", "Show activity flag in the grid. Press together with 0-5 in time view mode to select a activity flag.");
-			helpScreen.putEntry("L", "Toggle labels on the grid");
+			helpScreen.putEntry("A", "Show activity flag in the grid. Press together with 0-5 in temporal mode to display counts for a particular activity flag value.");
+			helpScreen.putEntry("P", "Show policy status in the grid. Press together with 0-5 in temporal mode to display counts for a particular policy status value.");
 			helpScreen.putEntry("M + 0-3", "Choose between statistics for: 0 - all machines, 1 - ATMs, 2 - servers, 3 - workstations in the grid.");
-			helpScreen.putEntry("P", "Show policy status in the grid. Press together with 0-5 in time view mode to select a particular policy status.");
+			helpScreen.addSpacer();
+			helpScreen.putEntry("T", "Toggle between gloabal / local time in the grid (applicable for temporal view only)");
+			helpScreen.putEntry("L", "Toggle labels on the grid");
 			helpScreen.putEntry("R", "Reset pan and zoom of the grid");
-			helpScreen.putEntry("S + 1-3", "Sort facilities within the business units by: 1 - name, 2 - time zone (W↘E); 3 - latitude (N↘S), 4 - longitude (W↘E).");
-			helpScreen.putEntry("S + ' '", "Include / exclude headquarters when sorting");
-			helpScreen.putEntry("T", "Toggle gloabal/local time in the grid (time view only)");
-			helpScreen.putEntry("V", "Toggle temporal / snapshot view");
+			helpScreen.putEntry("V + 1-3", "Toggle snapshot / temporal / overview grid modes");
+			helpScreen.putEntry("[ ] + ±", "Increase / decrease lower / upper boundary value colouring in temporal view and for connections (helps to better distunguish between values)");
+			helpScreen.putEntry("[ ] + SPACE", "Set lower / upper boundary value colouring to default");
+			helpScreen.addSpacer();
+			helpScreen.putEntry("S + 1-4", "Sort facilities within the business units by: 1 - name, 2 - time zone (W↘E); 3 - latitude (N↘S), 4 - longitude (W↘E).");
+			helpScreen.putEntry("S + A + 0-5", "Sort facilities within the business units by counts of machines having activity flag equal to pressed digit at selected time");
+			helpScreen.putEntry("S + P + 0-5", "Sort facilities within the business units by counts of machines having policy status equal to pressed digit at selected time");
+			helpScreen.putEntry("S + SPACE", "Include / exclude headquarters when sorting");
+			helpScreen.putEntry("G + 1-2", "Sort business units in the grid by: 1 - name, 2 - geographically");
+			helpScreen.addSpacer();
+			helpScreen.putEntry("Mouse actions", "Roll over a facility to see its detailed statistics at a particular time. Click to select the facility permanently.");
 			helpScreen.putEntry("ESC", "Deselect currently selected facility");
-			helpScreen.putEntry("← →", "± 15 minutes (press with SHIFT for ± 1 hour, with CONTROL for ± 1 day)");
+			helpScreen.putEntry("← →", "± 15 minutes (press with SHIFT for ± 1 hour; with CONTROL for ± 1 day)");
+			helpScreen.putEntry("↑ ↓", "View details of the next / previous facility in the business unit, when one is selected (press with SHIFT to jump over 5 facilities; with CONTROL to go to first / last facility)");
 
 			return;
 		case 1:
@@ -116,6 +134,12 @@ public class BOMNetworkStatusApp extends PApplet {
 			timeView.currentParameter = AbstractBUGView.P_POLICYSTATUS;
 			timeView.currentValue = 1;
 			timeView.currentCompactTimestamp = CompactTimestamp.fullTimestampToCompact("2012-02-04 08:00:00");
+
+			// Overall view
+			overallView = new OverallView(businessunitGrid);
+			overallView.currentParameter = AbstractBUGView.P_POLICYSTATUS;
+			overallView.currentValue = 1;
+			overallView.currentCompactTimestamp = CompactTimestamp.fullTimestampToCompact("2012-02-04 08:00:00");
 
 			currentView = snapshotView;
 
@@ -154,8 +178,7 @@ public class BOMNetworkStatusApp extends PApplet {
 			popMatrix();
 		}
 		drawTitle();
-		drawLegend();
-		drawTimeline();
+		drawBottomRow();
 		drawSelectedFacilityInfo();
 		flyingText.draw();
 
@@ -173,9 +196,9 @@ public class BOMNetworkStatusApp extends PApplet {
 
 		String title = "";
 
-		title += BOMDictionary.machineGroupToHR(timeView.currentMachineGroup) + ": ";
+		title += BOMDictionary.machineGroupToHR(currentView.currentMachineGroup) + ": ";
 
-		switch (timeView.currentParameter) {
+		switch (currentView.currentParameter) {
 		case AbstractBUGView.P_ACTIVITYFLAG:
 			title += "activityflag";
 			if (currentView == timeView)
@@ -193,15 +216,48 @@ public class BOMNetworkStatusApp extends PApplet {
 	}
 
 	/**
-	 * Draws the legend on the right from the title
+	 * Draws the legend, current time and sort mode below the grid
 	 */
-	protected void drawLegend() {
+	protected void drawBottomRow() {
+		pushMatrix();
+		translate((float) gridGraphicBufferBounds.getMinX() + BusinessunitGrid.PADDING, (float) gridGraphicBufferBounds.getMaxY() + 14);
+		textFont(bottomRowFont);
+		textAlign(LEFT, TOP);
+		fill(120);
+
+		// Current time (time range)
+		if (currentView == snapshotView) {
+			text(CompactTimestamp.toHRString(currentView.currentCompactTimestamp), 0, 0);
+		} else {
+			if (currentView.timeIsRelative)
+				text(CompactTimestamp.toHRString((short) (currentView.currentCompactTimestamp - 191), -3).substring(0, 20) + " ...  "
+						+ CompactTimestamp.toHRString(currentView.currentCompactTimestamp, -3).substring(0, 20), 0, 0);
+			else
+				text(CompactTimestamp.toHRString((short) (currentView.currentCompactTimestamp - 191)) + " ...  " + CompactTimestamp.toHRString(currentView.currentCompactTimestamp),
+						0, 0);
+		}
+
+		// Sort order
+		// translate(2*(BusinessunitGrid.COL_WIDTH + BusinessunitGrid.CELLPADDING_H), 0);
+		if (sortText != null) {
+			translate(0, -11);
+			text("   Facilities are sorted by " + sortText + (FacilityComparator.getInstance().sortHeadquarters || textWidth(sortText) > 230 ? "" : " (excluding headquarters)")
+					+ ".");
+			translate(0, 11);
+		}
+
+		// Legend
+		translate(4 * (BusinessunitGrid.COL_WIDTH + BusinessunitGrid.CELLPADDING_H), 0);
+		currentView.drawLegend(this.g, 0, 0, BusinessunitGrid.COL_WIDTH, 18);
+
+		popMatrix();
 	}
 
-	private void drawTimeline() {
-	}
-
-	private void drawSelectedFacilityInfo() {
+	protected void drawSelectedFacilityInfo() {
+		
+		if (currentView == overallView)
+			return;
+		
 		Facility f = currentView.selectedFacility;
 		if (f == null)
 			return;
@@ -214,6 +270,7 @@ public class BOMNetworkStatusApp extends PApplet {
 		textAlign(LEFT, BASELINE);
 
 		// Title
+		fill(0);
 		textFont(titleFont);
 		text(currentView.selectedFacility.businessunitName + " → " + currentView.selectedFacility.facilityName, 0, 22);
 
@@ -375,10 +432,28 @@ public class BOMNetworkStatusApp extends PApplet {
 		if (loadStage < 42)
 			return;
 
+		boolean keyMore = key == '+' || key == '=';
+		boolean keyLess = key == '-' || key == '_';
+		boolean keySpace = key == ' ';
+
 		keys[keyCode] = true;
 
-		// Facility sort order: 1 - name, 2 - timezone and name, 3 - lat, 4 - lon ' '  or a parameter
-		if (checkKey("s")) {
+		// Businessunits in the grid order: 1 - name, 2 - geographically
+		if (checkKey("g") && keyCode >= '1' && keyCode <= '4') {
+			if (keyCode == '1') {
+				businessunitGrid.setLayout(BusinessunitGrid.LAYOUT_SEQ);
+				flyingText.startFly("Arrange business units by name");
+			} else {
+				businessunitGrid.setLayout(BusinessunitGrid.LAYOUT_GEO);
+				flyingText.startFly("Arrange business units geographically");
+			}
+			gridGraphicBuffer.setUpdateFlag();
+			return;
+		}
+
+			// Facility sort order: 1 - name, 2 - timezone and name, 3 - lat, 4 - lon ' ' or a parameter
+		if (checkKey("s") && currentView != overallView) {
+			
 			FacilityComparator fc = FacilityComparator.getInstance();
 
 			// Sorting by a parameter
@@ -386,21 +461,28 @@ public class BOMNetworkStatusApp extends PApplet {
 				if (keyCode >= '0' && keyCode <= '5') {
 					if (checkKey("a")) {
 						fc.sortMode = FacilityComparator.SM_ACTIVITY_FLAG;
-						flyingText.startFly("Sort facilities by activity flag = " + BOMDictionary.activityFlagToHR(keyCode - 0x30) + "");
+						sortText = "count of activity flag = " + (keyCode - 0x30);
 					} else if (checkKey("p")) {
 						fc.sortMode = FacilityComparator.SM_POLICY_STATUS;
-						flyingText.startFly("Sort facilities by policy status = " + BOMDictionary.policyStatusToHR(keyCode - 0x30) + "");
+						sortText = "count of policy status = " + (keyCode - 0x30);
 					} else if (checkKey("c")) {
 						if (keyCode == 0 || keyCode == 5)
 							return;
 						fc.sortMode = FacilityComparator.SM_CONNECTIONS;
-						flyingText.startFly("Sort facilities by " + BOMDictionary.connectionsToHR(keyCode - 0x30) + " connections");
+						sortText = BOMDictionary.connectionsToHR(keyCode - 0x30) + " connections";
 					}
 
+					sortText += " at " + CompactTimestamp.toHRString(currentView.selectedCompactTimestamp);
+
+					if (currentView.currentMachineGroup != 0) {
+						sortText = BOMDictionary.machineGroupToHR(currentView.currentMachineGroup).toLowerCase() + "’ " + sortText;
+					}
+
+					flyingText.startFly("Sort facilities by + " + sortText);
 					fc.sortSubmode = keyCode - 0x30;
 					fc.sortMachineGroup = currentView.currentMachineGroup;
 					fc.sortComactTimestamp = currentView.selectedCompactTimestamp >= 0 ? currentView.selectedCompactTimestamp : currentView.currentCompactTimestamp;
-					
+
 					businessunitGrid.sortFacilities();
 				}
 
@@ -410,18 +492,19 @@ public class BOMNetworkStatusApp extends PApplet {
 					fc.sortMode = keyCode - 0x31;
 					switch (fc.sortMode) {
 					case FacilityComparator.SM_NAME:
-						flyingText.startFly("Sort facilities by name");
+						sortText = null;
 						break;
 					case FacilityComparator.SM_TIMEZONE:
-						flyingText.startFly("Sort facilities by time zone");
+						sortText = "time zone";
 						break;
 					case FacilityComparator.SM_LAT:
-						flyingText.startFly("Sort facilities by latitude (N↘S)");
+						sortText = "latitude";
 						break;
 					case FacilityComparator.SM_LON:
-						flyingText.startFly("Sort facilities by longitude (W↘E)");
+						sortText = "longitude (W↘E)";
 						break;
 					}
+					flyingText.startFly("Sort facilities by " + (sortText == null ? "name" : sortText));
 					businessunitGrid.sortFacilities();
 				} else if (key == ' ') {
 					fc.sortHeadquarters = !fc.sortHeadquarters;
@@ -448,14 +531,16 @@ public class BOMNetworkStatusApp extends PApplet {
 
 		// Show policy status
 		if (checkKey("p")) {
-			if (currentView == snapshotView) {
+			if (currentView != timeView) {
 				timeView.currentParameter = AbstractBUGView.P_POLICYSTATUS;
 				snapshotView.currentParameter = AbstractBUGView.P_POLICYSTATUS;
+				overallView.currentParameter = AbstractBUGView.P_POLICYSTATUS;
 				flyingText.startFly("Policy status");
 				gridGraphicBuffer.setUpdateFlag();
 			} else if (keyCode >= '0' && keyCode <= '5') {
 				snapshotView.currentParameter = AbstractBUGView.P_POLICYSTATUS;
 				timeView.currentParameter = AbstractBUGView.P_POLICYSTATUS;
+				overallView.currentParameter = AbstractBUGView.P_POLICYSTATUS;
 				timeView.currentValue = keyCode - 0x30;
 				flyingText.startFly("Policy status = " + BOMDictionary.policyStatusToHR(currentView.currentValue));
 				gridGraphicBuffer.setUpdateFlag();
@@ -465,9 +550,9 @@ public class BOMNetworkStatusApp extends PApplet {
 
 		// Show activityflag
 		if (checkKey("a")) {
-			if (currentView == snapshotView) {
+			if (currentView != timeView) {
 				snapshotView.currentParameter = AbstractBUGView.P_ACTIVITYFLAG;
-				timeView.currentParameter = AbstractBUGView.P_ACTIVITYFLAG;
+				overallView.currentParameter = AbstractBUGView.P_ACTIVITYFLAG;
 				flyingText.startFly("Activity flag");
 				gridGraphicBuffer.setUpdateFlag();
 			} else if (keyCode >= '0' && keyCode <= '5') {
@@ -508,7 +593,6 @@ public class BOMNetworkStatusApp extends PApplet {
 			return;
 		}
 
-
 		// Reset View
 		if (key == 'r') {
 			gridZoomPan.reset();
@@ -518,71 +602,146 @@ public class BOMNetworkStatusApp extends PApplet {
 			return;
 		}
 
-		// Toggle view (temporal / snapshot)
-		if (key == 'v') {
-			if (currentView == timeView) {
-				if (timeView.selectionIsLocked) {
-					snapshotView.selectedFacility = timeView.selectedFacility;
-					snapshotView.selectedCompactTimestamp = timeView.selectedCompactTimestamp;
-					snapshotView.currentCompactTimestamp = snapshotView.selectedCompactTimestamp;
-					snapshotView.selectionIsLocked = true;
-					snapshotView.showLabels = timeView.showLabels;
-				} else {
-					snapshotView.selectionIsLocked = false;
-				}
-				currentView = snapshotView;
-				flyingText.startFly("Snapshot view");
-			} else {
-				if (snapshotView.selectionIsLocked) {
-					timeView.selectedFacility = snapshotView.selectedFacility;
-					timeView.selectedCompactTimestamp = snapshotView.selectedCompactTimestamp;
-					timeView.selectionIsLocked = true;
-					timeView.showLabels = snapshotView.showLabels;
-				} else {
-					timeView.selectionIsLocked = false;
+		// Toggle view
+		if (checkKey("v") && keyCode > '0' && keyCode < '4') {
+			AbstractBUGView oldView = currentView;
 
-				}
+			switch (keyCode) {
+			case '1':
+				currentView = snapshotView;
+				break;
+			case '2':
 				currentView = timeView;
-				flyingText.startFly("Timeline view");
+				break;
+			case '3':
+				currentView = overallView;
+				break;
 			}
+
+			if (currentView == oldView)
+				return;
+			
+			if (currentView == snapshotView)
+				flyingText.startFly("Snapshot view");
+			else if (currentView == timeView)
+				flyingText.startFly("Timeline view");
+			else
+				flyingText.startFly("Overall view");
+
+			if (oldView.selectionIsLocked) {
+				currentView.selectedFacility = oldView.selectedFacility;
+				currentView.selectedCompactTimestamp = oldView.selectedCompactTimestamp;
+				currentView.selectionIsLocked = true;
+				currentView.showLabels = oldView.showLabels;
+				if (currentView == snapshotView)
+					currentView.currentCompactTimestamp = oldView.selectedCompactTimestamp;
+			} else {
+				currentView.selectionIsLocked = false;
+				currentView.selectedFacility = null;
+			}
+
+			currentView.currentMachineGroup = oldView.currentMachineGroup;
 			gridGraphicBuffer.setUpdateFlag();
 			return;
 		}
 
 		// Facility ±
-		if (keyCode == UP || keyCode == DOWN) {
+		if ((keyCode == UP || keyCode == DOWN) && currentView != overallView) {
 			int df = keyCode == DOWN ? 1 : -1;
+			String label = df > 0 ? "Next facility" : "Previous facility";
+			if (checkKey(SHIFT)) {
+				df *= 5;
+				label = df > 0 ? "5th next facility" : "5th previous facility";
+			} else if (checkKey(CONTROL)) {
+				df *= 100500;
+				label = df > 0 ? "Bottom-most facility" : "Top-most facility";
+			}
 			if (currentView.selectedFacility == null)
 				return;
 			if (currentView.selectNeighbourFacility(df)) {
 				gridGraphicBuffer.setUpdateFlag();
-				flyingText.startFly(df > 0 ? "Next facility" : "Previous facility");
+				flyingText.startFly(label);
 				mouseMoved();
 			}
 			return;
 		}
 
 		// Time ±
-		if (keyCode == RIGHT || keyCode == LEFT) {
+		if ((keyCode == RIGHT || keyCode == LEFT) && currentView != overallView) {
 			int dt = keyCode == RIGHT ? 1 : -1;
 			String label = "15 minunites";
 			if (checkKey(SHIFT)) {
 				dt *= 4;
 				label = "1 hour";
 			} else if (checkKey(CONTROL)) {
-				dt *= 4*24;
+				dt *= 4 * 24;
 				label = "1 day";
 			}
 			if (currentView.selectNeighbourTimestamp(dt)) {
-				flyingText.startFly((dt < 0 ? "- ": "+ ") + label);
+				flyingText.startFly((dt < 0 ? "- " : "+ ") + label);
 				gridGraphicBuffer.setUpdateFlag();
 				mouseMoved();
 			}
 			return;
 		}
 
-		// Unlock focus
+		// Range (lower/upper boundary) ±
+		if (currentView == timeView) {
+			TimeBUGView currentViewC = (TimeBUGView) currentView;
+			if (checkKey("[")) {
+				float newRangeMin = currentViewC.rangeMin;
+				float dr = (currentViewC.rangeMaxLimit - currentViewC.rangeMinLimit) / 10f;
+
+				if (keySpace)
+					newRangeMin = currentViewC.rangeMinLimit;
+				else if (keyLess)
+					newRangeMin -= dr;
+				else if (keyMore)
+					newRangeMin += dr;
+
+				if (newRangeMin < currentViewC.rangeMinLimit)
+					newRangeMin = currentViewC.rangeMinLimit;
+				if (newRangeMin > currentViewC.rangeMax - dr / 2)
+					newRangeMin = currentViewC.rangeMax - dr / 2;
+
+				if (newRangeMin != currentViewC.rangeMin) {
+					currentViewC.rangeMin = newRangeMin;
+					flyingText.startFly("Change range lower limit");
+					gridGraphicBuffer.setUpdateFlag();
+				}
+				return;
+			}
+			if (checkKey("]")) {
+				float newRangeMax = currentViewC.rangeMax;
+				float dr = (currentViewC.rangeMaxLimit - currentViewC.rangeMinLimit) / 10f;
+
+				if (keySpace)
+					newRangeMax = currentViewC.rangeMaxLimit;
+				else if (keyLess)
+					newRangeMax -= dr;
+				else if (keyMore)
+					newRangeMax += dr;
+
+				if (newRangeMax > currentViewC.rangeMaxLimit)
+					newRangeMax = currentViewC.rangeMaxLimit;
+				if (newRangeMax < currentViewC.rangeMin + dr / 2)
+					newRangeMax = currentViewC.rangeMin + dr / 2;
+
+				if (newRangeMax != currentViewC.rangeMax) {
+					currentViewC.rangeMax = newRangeMax;
+					flyingText.startFly("Change range upper limit");
+					gridGraphicBuffer.setUpdateFlag();
+				}
+				return;
+			}
+		}
+
+		// Unlock focus (or hid the help)
 		if (key == ESC) {
+			if (helpScreen.getIsActive()) {
+				helpScreen.setIsActive(false);
+				return;
+			}
 			timeView.selectionIsLocked = false;
 			snapshotView.selectionIsLocked = false;
 			mouseMoved();
@@ -590,9 +749,9 @@ public class BOMNetworkStatusApp extends PApplet {
 			return;
 		}
 
-		// Show help
+		// Toggle help
 		if (key == 'h') {
-			helpScreen.setIsActive(true);
+			helpScreen.setIsActive(!helpScreen.getIsActive());
 			return;
 		}
 	}
@@ -601,12 +760,6 @@ public class BOMNetworkStatusApp extends PApplet {
 		if (loadStage < 42)
 			return;
 		keys[keyCode] = false;
-
-		// Hide help
-		if (key == 'h') {
-			helpScreen.setIsActive(false);
-		}
-
 	}
 
 	public void mouseMoved() {
@@ -671,7 +824,7 @@ public class BOMNetworkStatusApp extends PApplet {
 						currentBu = new Businessunit(currentBuName);
 						businessunits.put(currentBuName, currentBu);
 					}
-					
+
 					Facility currentF = new Facility();
 					currentBu.facilities.put(currentFName, currentF);
 					currentBu.sortedFacilities.add(currentF);
@@ -706,11 +859,11 @@ public class BOMNetworkStatusApp extends PApplet {
 					String currentBuName = tokens[0];
 					String currentFName = tokens[1];
 					short compactTimestamp = CompactTimestamp.fullTimestampToCompact(tokens[2]);
-					
+
 					// Hack for business unit name to have data centres in different cells. See Facility.businessunitRealName
 					if (currentBuName.equals("headquarters"))
 						currentBuName = currentFName;
-					
+
 					if (businessunits.get(currentBuName) == null)
 						continue;
 					Facility currentF = businessunits.get(currentBuName).facilities.get(currentFName);
