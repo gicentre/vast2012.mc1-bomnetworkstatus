@@ -1,6 +1,5 @@
 package org.gicentre.vast2012.bomnetworkstatus.ui.bugview;
 
-import org.gicentre.utils.colour.ColourTable;
 import org.gicentre.vast2012.bomnetworkstatus.Businessunit;
 import org.gicentre.vast2012.bomnetworkstatus.CompactTimestamp;
 import org.gicentre.vast2012.bomnetworkstatus.Facility;
@@ -21,20 +20,6 @@ public class OverallView extends CommonBUGView {
 		float offsetY = bug.getColY(bug.getRow(businessunitName));
 
 		Businessunit bu = bug.getBusinessunits().get(businessunitName);
-
-		// Picking colours
-		ColourTable currentCT;
-		switch (currentParameter) {
-		case P_ACTIVITYFLAG:
-			currentCT = activityFlagCT;
-			break;
-		case P_POLICYSTATUS:
-			currentCT = policyStatusCT;
-			break;
-		default:
-			currentCT = connectionCT;
-			break;
-		}
 
 		canvas.noStroke();
 
@@ -98,7 +83,7 @@ public class OverallView extends CommonBUGView {
 					int offsetY2 = 0;
 					int offsetX2 = t;
 					for (int i = 0; i <= 5; i++) {
-						canvas.fill(currentCT.findColour(5-i) & 0xaaffffff); // add ≈ 60 alpha
+						canvas.fill(getColour(currentParameter, 5-i));
 						canvas.rect(offsetX + offsetX2, offsetY + offsetY2, 1, heightInPx[5-i]);
 						offsetY2 += heightInPx[5-i];
 					}

@@ -15,6 +15,14 @@ public abstract class AbstractBUGView {
 	public static final int V_CONN_AVG = 3;
 	public static final int V_CONN_SD = 4;
 	
+	public boolean rangeIsLocked = false;
+	public float rangeMin = 0;
+	public float rangeMax = 120;
+	public float rangeMinLimit = 0;
+	public float rangeMaxLimit = 1;
+	
+	public boolean rangeIsAbsolute = false;
+	
 	public int currentMachineGroup; // 0, 1, 2, 3
 	public int currentParameter; // 0, 1, 2 (P_XXX)
 	public int currentValue; // 0-5 or V_XXX
@@ -56,5 +64,7 @@ public abstract class AbstractBUGView {
 	 * Changes selected timestamp (increments/decrements it by diff)
 	 */
 	public abstract boolean selectNeighbourTimestamp(int diff);
+	
+	public abstract void resetRange();
 
 }

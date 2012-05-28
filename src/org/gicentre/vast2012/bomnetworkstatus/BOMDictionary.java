@@ -78,25 +78,19 @@ public class BOMDictionary {
 	}
 
 	public static String connectionsToHR(int connectionParameter) {
-		String result = "";
 		switch (connectionParameter) {
 		case 0:
-			result += "count";
-			break;
+			return "count";
 		case 1:
-			result += "min";
-			break;
+			return "avg";
 		case 2:
-			result += "max";
-			break;
+			return "sd";
 		case 3:
-			result += "avg";
-			break;
+			return "min";
 		case 4:
-			result += "sd";
-			break;
+			return "max";
 		}
-		return result;
+		return "unknown";
 	}
 
 	public static String machineFunctionToHR(int machineFunction) {

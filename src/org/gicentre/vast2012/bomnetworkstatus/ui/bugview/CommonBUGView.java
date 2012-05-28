@@ -28,15 +28,25 @@ public abstract class CommonBUGView extends AbstractBUGView {
 
 		// Initializing colour tables
 		if (activityFlagCT == null) {
-			activityFlagCT = ColourTable.getPresetColourTable(ColourTable.SET1_6, 0, 5);
+			activityFlagCT = new ColourTable();
+			activityFlagCT.addContinuousColourRule(0, Color.HSBtoRGB(0, 0, 0));
+			activityFlagCT.addContinuousColourRule(1, Color.HSBtoRGB(.57f, .8f, .8f));
+			activityFlagCT.addContinuousColourRule(2, Color.HSBtoRGB(.87f, .8f, .8f));
+			activityFlagCT.addContinuousColourRule(3, Color.HSBtoRGB(.67f, .8f, .8f));
+			activityFlagCT.addContinuousColourRule(4, Color.HSBtoRGB(.97f, .8f, .8f));
+			activityFlagCT.addContinuousColourRule(5, Color.HSBtoRGB(.77f, .8f, .8f));
+			
+			
 			policyStatusCT = new ColourTable();
 			policyStatusCT.addContinuousColourRule(0, Color.HSBtoRGB(0, 0, 0));
 			policyStatusCT.addContinuousColourRule(1, Color.HSBtoRGB(.33f, .8f, .6f));
-			policyStatusCT.addContinuousColourRule(2, Color.HSBtoRGB(.2f, .8f, .6f));
+			policyStatusCT.addContinuousColourRule(2, Color.HSBtoRGB(.20f, .8f, .6f));
 			policyStatusCT.addContinuousColourRule(3, Color.HSBtoRGB(.15f, .8f, .6f));
-			policyStatusCT.addContinuousColourRule(4, Color.HSBtoRGB(.1f, .8f, .6f));
-			policyStatusCT.addContinuousColourRule(5, Color.HSBtoRGB(.0f, .8f, .6f));
-			connectionCT = ColourTable.getPresetColourTable(ColourTable.SET3_5, 0, 4);
+			policyStatusCT.addContinuousColourRule(4, Color.HSBtoRGB(.10f, .8f, .6f));
+			policyStatusCT.addContinuousColourRule(5, Color.HSBtoRGB(.00f, .8f, .6f));
+
+			connectionCT = new ColourTable();
+			connectionCT.addContinuousColourRule(0, Color.HSBtoRGB(0, 0, 0));
 
 		}
 	}
@@ -197,7 +207,7 @@ public abstract class CommonBUGView extends AbstractBUGView {
 		}
 
 		if (relaxed)
-			return PApplet.lerpColor(ct.findColour(value), 0x00ffffff, 0.5f, PApplet.BLEND);
+			return PApplet.lerpColor(ct.findColour(value), 0xffffffff, 0.4f, PApplet.BLEND);
 		else
 			return ct.findColour(value);
 	}
@@ -231,5 +241,78 @@ public abstract class CommonBUGView extends AbstractBUGView {
 		selectedCompactTimestamp += diff;
 		return true;
 	}
+
+	public void drawGradientLegend(PGraphics canvas, float x, float y, float width, float height) {
+		
+		canvas.pushMatrix();
+		canvas.translate(x, y);
+		
+		String t1, t2;
+		
+		if (rangeIsAbsolute) {
+			t1 = String.valueOf((int)rangeMin);
+			t2 = String.valueOf((int)rangeMax);
+		} else {
+			t1 = String.valueOf((int)(rangeMin*100)) + "%";
+			t2 = String.valueOf((int)(rangeMax*100)) + "%";
+		}
+		
+		canvas.fill(120);
+		canvas.textAlign(PGraphics.LEFT, PGraphics.TOP);
+		canvas.text(t1, 0, 0);
+		canvas.textAlign(PGraphics.RIGHT, PGraphics.TOP);
+		canvas.text(t2, width, 0);
+		
+		canvas.noStroke();
+		int colourMax = getColour(currentParameter, currentValue, false);
+		int colourMin = canvas.color(255, 255, 255);
+		
+		for (float i = 0; i< width; i++) {
+			canvas.fill(canvas.lerpColor(colourMin, colourMax,i/width));
+			canvas.rect(i, 16, 1, height-16);
+		}
+		
+		canvas.popMatrix();
+	}
 	
+	public void drawSequentialLegend(PGraphics canvas, float x, float y, float width, float height) {
+		
+		canvas.pushMatrix();
+		canvas.translate(x, y);
+		
+		canvas.textAlign(PGraphics.CENTER, PGraphics.TOP);
+		x += canvas.textWidth("0");
+		width -= canvas.textWidth("5");
+		
+		for (int i = 0; i <=5; i++) {
+			String caption = String.valueOf(i);
+			float currentY = x + (width - x) * i / 5;
+			canvas.fill(120);
+			canvas.text(caption, currentY, 0);
+			canvas.fill(getColour(currentParameter, i));
+			canvas.rect(currentY - canvas.textWidth(caption) / 2, 16, canvas.textWidth(caption), 3);
+		}
+		canvas.popMatrix();
+	}
+	
+	public void resetRange() {
+		switch (currentParameter) {
+		case P_ACTIVITYFLAG:
+		case P_POLICYSTATUS:
+			rangeMin = 0;
+			rangeMax = 1;
+			rangeMinLimit = 0;
+			rangeMaxLimit = 1;
+			rangeIsAbsolute = false;
+			break;
+
+		default:
+			rangeMin = 0;
+			rangeMax = 120;
+			rangeMinLimit = 0;
+			rangeMaxLimit = 200;
+			rangeIsAbsolute = true;
+			break;
+		}
+	}
 }

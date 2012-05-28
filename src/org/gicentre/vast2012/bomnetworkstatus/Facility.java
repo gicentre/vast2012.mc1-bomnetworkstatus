@@ -23,7 +23,7 @@ public class Facility {
 
 	// 0 = all, 1 = atm, 2 = server, 3 = workstation
 	public MachineGroup[] machinegroups = new MachineGroup[4];
-
+	
 	/**
 	 * Returns the value of the number in the facility name (for branches only).
 	 * Examples: "branch42" → 42

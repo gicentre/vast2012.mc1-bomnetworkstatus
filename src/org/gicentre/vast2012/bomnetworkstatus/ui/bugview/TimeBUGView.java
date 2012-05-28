@@ -11,14 +11,6 @@ import processing.core.PGraphics;
 
 public class TimeBUGView extends CommonBUGView {
 
-	public boolean rangeIsLocked = false;
-	public float rangeMin = 0;
-	public float rangeMax = 1;
-	public float rangeMinLimit = 0;
-	public float rangeMaxLimit = 1;
-	
-	public boolean rangeIsAbsolute = false;
-	
 	public TimeBUGView(BusinessunitGrid grid) {
 		super(grid);
 	}
@@ -66,14 +58,18 @@ public class TimeBUGView extends CommonBUGView {
 						switch (currentParameter) {
 						case P_ACTIVITYFLAG:
 							value = mgs.countByActivityFlag[currentValue];
-							valueBase = mg.machinecount;
+							if (mg.machinecount > 0)
+								valueBase = mg.machinecount;
 							break;
 						case P_POLICYSTATUS:
 							value = mgs.countByPolicyStatus[currentValue];
-							valueBase = mg.machinecount;
+							if (mg.machinecount > 0)
+								valueBase = mg.machinecount;
 							break;
 						case P_CONNECTIONS:
 							value = mgs.connections[currentValue];
+							if (mg.machinecount > 0)
+								valueBase = 1;
 							break;
 						}
 					}
@@ -141,35 +137,7 @@ public class TimeBUGView extends CommonBUGView {
 	}
 
 	public void drawLegend(PGraphics canvas, float x, float y, float width, float height) {
-		canvas.pushMatrix();
-		canvas.translate(x, y);
-		
-		String t1, t2;
-		
-		if (rangeIsAbsolute) {
-			t1 = String.valueOf((int)rangeMin);
-			t2 = String.valueOf((int)rangeMax);
-		} else {
-			t1 = String.valueOf((int)(rangeMin*100)) + "%";
-			t2 = String.valueOf((int)(rangeMax*100)) + "%";
-		}
-		
-		canvas.fill(120);
-		canvas.textAlign(PGraphics.LEFT, PGraphics.TOP);
-		canvas.text(t1, 0, 0);
-		canvas.textAlign(PGraphics.RIGHT, PGraphics.TOP);
-		canvas.text(t2, width, 0);
-		
-		canvas.noStroke();
-		int colourMax = getColour(currentParameter, currentValue, false);
-		int colourMin = canvas.color(255, 255, 255);
-		
-		for (float i = 0; i< width; i++) {
-			canvas.fill(canvas.lerpColor(colourMin, colourMax,i/width));
-			canvas.rect(i, 16, 1, height-16);
-		}
-		
-		canvas.popMatrix();
+		drawGradientLegend(canvas, x, y, width, height);
 	}
 
 

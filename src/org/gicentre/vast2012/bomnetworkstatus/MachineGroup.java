@@ -15,6 +15,9 @@ public class MachineGroup {
 	public short maxConnectionsMin;
 	
 	public MachineGroupStatus[] statuses;
+	
+	public int ipMin;
+	public int ipMax;
 
 	public MachineGroup(int machinecount) {
 		this.machinecount = machinecount;
