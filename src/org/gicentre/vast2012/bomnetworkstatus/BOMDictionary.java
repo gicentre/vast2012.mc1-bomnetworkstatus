@@ -8,22 +8,30 @@ package org.gicentre.vast2012.bomnetworkstatus;
 public class BOMDictionary {
 
 	public static String machineGroupToHR(int mg) {
+		return machineGroupToHR(mg, false);
+	}
+
+	public static String machineGroupToHR(int mg, boolean single) {
 		String result = "";
 
 		switch (mg) {
 		case 0:
-			result += "All machines";
+			result += "All machine";
 			break;
 		case 1:
-			result += "ATMs";
+			result += "ATM";
 			break;
 		case 2:
-			result += "Servers";
+			result += "Server";
 			break;
 		case 3:
-			result += "Workstations";
+			result += "Workstation";
 			break;
 		}
+		
+		if (!single)
+			result += "s"; 
+			
 		return result;
 	}
 

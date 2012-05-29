@@ -39,7 +39,8 @@ public class BOMNetworkStatusApp extends PApplet {
 	Clipper detailsClipper;
 	ZoomPan detailsZoomPan;
 	ThreadedGraphicBuffer detailsGraphicBuffer;
-	boolean updateDetailsOnNextDraw;
+	MachineGroupDetailsCache detailsCache;
+	int framesToUpdateDetailsGraphicBuffer = -1;
 
 	FlyingText flyingText;
 	HelpScreen helpScreen;
@@ -62,8 +63,8 @@ public class BOMNetworkStatusApp extends PApplet {
 	}
 
 	public void setup() {
-
 		size(1280, 1000);
+		frame.setTitle("Bank of Money Network Status — giCentre, City University London");
 		titleFont = createFont("Helvetica", 20);
 		subtitleFont = createFont("Helvetica", 16);
 		selectedInfoFont = createFont("Arial", 14);
@@ -171,7 +172,7 @@ public class BOMNetworkStatusApp extends PApplet {
 
 			details = new DetailsView();
 			detailsClipper = new Clipper(this, new Rectangle((int) gridClipper.getClippingRect().getMaxX() + 30, 405, width - 60 - (int) gridClipper.getClippingRect().getMaxX(),
-					height - 340 - 100));
+					height - 405 - 80));
 			detailsZoomPan = new ZoomPan(this);
 			detailsZoomPan.setMinZoomScale(1);
 			detailsZoomPan.setMaxZoomScale(1);
@@ -180,6 +181,7 @@ public class BOMNetworkStatusApp extends PApplet {
 			detailsZoomPan.setMouseBoundsMask(detailsClipper.getClippingRect().getBounds());
 			detailsGraphicBuffer = new ThreadedGraphicBuffer(this, detailsZoomPan, new DetailsThreadedDraw(), detailsClipper.getClippingRect().getBounds());
 			detailsGraphicBuffer.setUpdateDuringZoomPan(false);
+			detailsCache = new MachineGroupDetailsCache();
 
 			flyingText = new FlyingText(this, (float) (gridClipper.getClippingRect().getBounds().getX() + businessunitGrid.getWidth() / 2), (float) (gridClipper.getClippingRect()
 					.getBounds().getY() + businessunitGrid.getHeight() / 2));
@@ -355,8 +357,9 @@ public class BOMNetworkStatusApp extends PApplet {
 			textFont(selectedInfoFont);
 			translate(0, 16);
 			for (int i = 0; i < 6; i++) {
-				// stripe
-				if ((currentView.selectionIsLocked && mgs.countByPolicyStatus[i] > 0) || (currentView.currentParameter == AbstractBUGView.P_POLICYSTATUS && (currentView == snapshotView || i == currentView.currentValue))) {
+				// square
+				if ((currentView.selectionIsLocked && mgs.countByPolicyStatus[i] > 0)
+						|| (currentView.currentParameter == AbstractBUGView.P_POLICYSTATUS && (currentView == snapshotView || i == currentView.currentValue))) {
 					fill(currentView.getColour(AbstractBUGView.P_POLICYSTATUS, i));
 					rect(11, -8 + 15 * i, 5, 5);
 				}
@@ -391,8 +394,9 @@ public class BOMNetworkStatusApp extends PApplet {
 			textFont(selectedInfoFont);
 			translate(0, 16);
 			for (int i = 0; i < 6; i++) {
-				// stripe
-				if ((currentView.selectionIsLocked && mgs.countByActivityFlag[i] > 0) || (currentView.currentParameter == AbstractBUGView.P_ACTIVITYFLAG && (currentView == snapshotView || i == currentView.currentValue))) {
+				// square
+				if ((currentView.selectionIsLocked && mgs.countByActivityFlag[i] > 0)
+						|| (currentView.currentParameter == AbstractBUGView.P_ACTIVITYFLAG && (currentView == snapshotView || i == currentView.currentValue))) {
 					fill(currentView.getColour(AbstractBUGView.P_ACTIVITYFLAG, i));
 					rect(11, -8 + 15 * i, 5, 5);
 				}
@@ -441,6 +445,7 @@ public class BOMNetworkStatusApp extends PApplet {
 			}
 			popMatrix();
 
+			// Details
 			if (currentView.selectionIsLocked
 					&& (details.currentCompactTimestamp != currentView.selectedCompactTimestamp || details.currentFacility != currentView.selectedFacility || details.currentMachineGroup != currentView.currentMachineGroup)) {
 				if (details.currentFacility == null)
@@ -449,14 +454,29 @@ public class BOMNetworkStatusApp extends PApplet {
 				details.currentCompactTimestamp = currentView.selectedCompactTimestamp;
 				details.currentFacility = currentView.selectedFacility;
 				details.currentMachineGroup = currentView.currentMachineGroup;
-				detailsGraphicBuffer.setUpdateFlag();
+
+				// Adding a delay to redraw to avoid flickering
+				detailsCache.startLoad(details.currentFacility.getBusinessunitRealName(), details.currentFacility.facilityName, details.currentCompactTimestamp);
+				if (details.currentFacility == null)
+					detailsGraphicBuffer.setUpdateFlag();
+				else
+					framesToUpdateDetailsGraphicBuffer = 2;
 			} else if (!currentView.selectionIsLocked && details.currentFacility != null) {
 				details.currentFacility = null;
 				detailsZoomPan.reset();
 				detailsGraphicBuffer.setUpdateFlag();
 			}
-			if (updateDetailsOnNextDraw)
+			if (detailsCache.dataChanged) {
+				detailsCache.dataChanged = false;
 				detailsGraphicBuffer.setUpdateFlag();
+			}
+
+			// Delay to redraw to avoid flickering in branches
+			if (framesToUpdateDetailsGraphicBuffer == 0) {
+				framesToUpdateDetailsGraphicBuffer = -1;
+				detailsGraphicBuffer.setUpdateFlag();
+			} else if (framesToUpdateDetailsGraphicBuffer > 0)
+				--framesToUpdateDetailsGraphicBuffer;
 
 			if (details.currentFacility != null) {
 				translate(0, 235);
@@ -466,6 +486,7 @@ public class BOMNetworkStatusApp extends PApplet {
 					text(BOMDictionary.machineFunctionToHR(i), 0, -28f * i - 2);
 				}
 
+				rotate(-(float) Math.PI / 2);
 			}
 
 			popMatrix();
@@ -486,6 +507,30 @@ public class BOMNetworkStatusApp extends PApplet {
 				rect(0, -i, w, 1);
 			}
 
+			// Selected machine details
+			MachineDetails md = details.selectedMachineDetails;
+			if (md != null) {
+				translate(0, 5);
+				fill(120);
+				textAlign(LEFT, TOP);
+				text(BOMDictionary.machineGroupToHR(md.machineGroup, true) + (md.machineFunction != 0 ? "; " + BOMDictionary.machineFunctionToHR(md.machineFunction) : ""), 0, 0);
+				text("PS: " + BOMDictionary.policyStatusToHR(md.policyStatus), 0, 15);
+				text("AF: " + BOMDictionary.activityFlagToHR(md.activityFlag), 0, 30);
+				text("Connections: " + md.numConnections, 0, 45);
+
+				translate((int) detailsClipper.getClippingRect().getWidth(), 0);
+				fill(currentView.getColour(AbstractBUGView.P_POLICYSTATUS, md.policyStatus));
+				rect(-5, 15 + 7, 5, 5);
+				fill(currentView.getColour(AbstractBUGView.P_ACTIVITYFLAG, md.activityFlag));
+				rect(-5, 30 + 7, 5, 5);
+				fill(currentView.getConnectionsColour(g, md.numConnections));
+				rect(-5, 45 + 7, 5, 5);
+
+				textAlign(RIGHT, TOP);
+				fill(120);
+				text(IPConverter.intToStr(md.ipaddr), 0, 0);
+
+			}
 		}
 
 		popMatrix();
@@ -825,6 +870,8 @@ public class BOMNetworkStatusApp extends PApplet {
 					flyingText.startFly("Change range lower limit");
 					gridGraphicBuffer.setUpdateFlag();
 				}
+
+				detailsGraphicBuffer.setUpdateFlag();
 				return;
 			}
 			if (checkKey("]")) {
@@ -848,6 +895,7 @@ public class BOMNetworkStatusApp extends PApplet {
 					flyingText.startFly("Change range upper limit");
 					gridGraphicBuffer.setUpdateFlag();
 				}
+				detailsGraphicBuffer.setUpdateFlag();
 				return;
 			}
 		}
@@ -877,17 +925,26 @@ public class BOMNetworkStatusApp extends PApplet {
 		if (loadStage < 42)
 			return;
 
+		PVector mouseCoordWithOffset = new PVector(mouseX, mouseY);
+
 		// Getting object details by mouse coordinates
 		if (!gridClipper.getClippingRect().contains(mouseX, mouseY)) {
 			if (!currentView.selectionIsLocked)
 				currentView.selectedFacility = null;
 		} else {
 			if (!currentView.selectionIsLocked) {
-				PVector mouseCoordWithOffset = new PVector(mouseX, mouseY);
-				PVector convertedMouseCoord = gridZoomPan.getZoomPanState().getDispToCoord(mouseCoordWithOffset);
-				currentView.selectAt((int) convertedMouseCoord.x - (int) gridClipper.getClippingRect().getMinX(), (int) convertedMouseCoord.y
+				PVector convertedMouseCoordToGrid = gridZoomPan.getZoomPanState().getDispToCoord(mouseCoordWithOffset);
+				currentView.selectAt((int) convertedMouseCoordToGrid.x - (int) gridClipper.getClippingRect().getMinX(), (int) convertedMouseCoordToGrid.y
 						- (int) gridClipper.getClippingRect().getMinY());
 			}
+		}
+
+		if (detailsClipper.getClippingRect().contains(mouseX, mouseY)) {
+			PVector convertedMouseCoordToDetails = detailsZoomPan.getZoomPanState().getDispToCoord(mouseCoordWithOffset);
+			details.selectAt((int) convertedMouseCoordToDetails.x - (int) detailsClipper.getClippingRect().getMinX(), (int) convertedMouseCoordToDetails.y
+					- (int) detailsClipper.getClippingRect().getMinY());
+		} else {
+			details.selectedMachineDetails = null;
 		}
 	}
 
@@ -1036,9 +1093,9 @@ public class BOMNetworkStatusApp extends PApplet {
 			canvas.pushMatrix();
 			zoomPanState.transform(canvas);
 			canvas.translate((float) detailsClipper.getClippingRect().getMinX(), (float) detailsClipper.getClippingRect().getMinY());
-			if (details.draw(canvas, currentView, Thread.currentThread()))
-				updateDetailsOnNextDraw = true;
+			details.draw(canvas, detailsCache, currentView, Thread.currentThread());
 			canvas.popMatrix();
+			mouseMoved();
 		}
 	}
 

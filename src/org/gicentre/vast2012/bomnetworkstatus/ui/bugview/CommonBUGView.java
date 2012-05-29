@@ -214,6 +214,18 @@ public abstract class CommonBUGView extends AbstractBUGView {
 			return ct.findColour(value);
 	}
 
+	public int getConnectionsColour(PGraphics canvas, int numConnections) {
+		float cRangeMin = 0;
+		float cRangeMax = 120;
+		
+		if (currentParameter == P_CONNECTIONS) {
+			cRangeMin = rangeMin;
+			cRangeMax = rangeMax;
+		}
+		
+		return  canvas.lerpColor(0xffffffff, getColour(AbstractBUGView.P_CONNECTIONS, 0, false),  Math.min(1, Math.max(0, (numConnections) - cRangeMin) / (cRangeMax - cRangeMin)));
+	}
+
 	public boolean selectNeighbourFacility(int diff) {
 		Businessunit bu = bug.getBusinessunits().get(selectedFacility.businessunitName);
 		int oldPos = bu.sortedFacilities.indexOf(selectedFacility);

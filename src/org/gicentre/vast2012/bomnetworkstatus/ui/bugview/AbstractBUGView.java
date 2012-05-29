@@ -67,4 +67,5 @@ public abstract class AbstractBUGView {
 	
 	public abstract void resetRange();
 
+	public abstract int getConnectionsColour(PGraphics canvas, int numConnections);
 }
