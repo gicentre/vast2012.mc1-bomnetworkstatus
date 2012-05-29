@@ -92,7 +92,6 @@ public class SnapshotBUGView extends CommonBUGView {
 						int sdX = (int) ((mgs.connections[2]) / (rangeMax - rangeMin) * 192);
 
 						// Min - Max
-						canvas.fill(0);
 						float minXCorrected = offsetX + Math.max(Math.min(minX, 191), 0);
 						float maxXCorrected = offsetX + Math.max(Math.min(maxX, 191), 0);
 						canvas.fill(230);
@@ -103,11 +102,6 @@ public class SnapshotBUGView extends CommonBUGView {
 						int sdLeft = Math.max(Math.min(avgX - sdX, 191), 0);
 						int sdRight = Math.max(Math.min(avgX + sdX, 191), 0);
 						canvas.rect(offsetX + sdLeft, offsetY + currentY, sdRight - sdLeft, currentFacilityHeight);
-
-						// Min
-						//canvas.rect(minXCorrected, offsetY + currentY, 1, currentFacilityHeight);
-						// Max
-						//canvas.rect(maxXCorrected, offsetY + currentY, 1, currentFacilityHeight);
 
 						// Avg
 						canvas.fill(0);
@@ -147,7 +141,7 @@ public class SnapshotBUGView extends CommonBUGView {
 		if (currentParameter == P_ACTIVITYFLAG || currentParameter == P_POLICYSTATUS) {
 			drawSequentialLegend(canvas, x, y, width, height);
 		} else {
-			drawGradientLegend(canvas, x, y, width, height);
+			drawStatsLegend(canvas, x, y, width, height);
 		}
 	}
 }

@@ -27,6 +27,16 @@ public class BOMDictionary {
 		return result;
 	}
 
+	public static byte machineGroupFromHR(String machineGroup) {
+		if (machineGroup.equals("atm"))
+			return 1;
+		if (machineGroup.equals("server"))
+			return 2;
+		if (machineGroup.equals("workstation"))
+			return 3;
+		return 0;
+	}
+
 	public static String activityFlagToHR(int activityFlag) {
 		String result = String.valueOf(activityFlag);
 		switch (activityFlag) {
@@ -133,7 +143,6 @@ public class BOMDictionary {
 		if (machineFunction.equals("web"))
 			return 8;
 
-		System.out.println(machineFunction);
 		return 0;
 	}
 

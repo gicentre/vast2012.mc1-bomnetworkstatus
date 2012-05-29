@@ -34,4 +34,8 @@ public class Facility {
 			return Integer.valueOf(facilityName.substring(6));
 		return 0;
 	}
+
+	public String getBusinessunitRealName() {
+		return (businessunitRealName == null ? businessunitName : businessunitRealName);
+	}
 }

@@ -3,11 +3,6 @@ package org.gicentre.vast2012.bomnetworkstatus;
 import java.awt.Rectangle;
 import java.awt.event.KeyEvent;
 import java.io.BufferedReader;
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.Statement;
 import java.util.HashMap;
 
 import org.gicentre.utils.gui.Clipper;
@@ -16,9 +11,11 @@ import org.gicentre.utils.gui.ThreadedDraw;
 import org.gicentre.utils.gui.ThreadedGraphicBuffer;
 import org.gicentre.utils.move.ZoomPan;
 import org.gicentre.utils.move.ZoomPanState;
+import org.gicentre.utils.move.ZoomPan.ZoomPanBehaviour;
 import org.gicentre.vast2012.bomnetworkstatus.ui.BusinessunitGrid;
 import org.gicentre.vast2012.bomnetworkstatus.ui.FlyingText;
 import org.gicentre.vast2012.bomnetworkstatus.ui.bugview.AbstractBUGView;
+import org.gicentre.vast2012.bomnetworkstatus.ui.bugview.DetailsView;
 import org.gicentre.vast2012.bomnetworkstatus.ui.bugview.OverallView;
 import org.gicentre.vast2012.bomnetworkstatus.ui.bugview.SnapshotBUGView;
 import org.gicentre.vast2012.bomnetworkstatus.ui.bugview.TimeBUGView;
@@ -32,19 +29,21 @@ public class BOMNetworkStatusApp extends PApplet {
 
 	private static final long serialVersionUID = 4320695214813440866L;
 
-	// public static String dbURL = "jdbc:postgresql://localhost/vast_mc1";
-	// public static String dbUser = "postgres";
-	// public static String dbPassword = "hh";
-
-	public HashMap<String, Businessunit> businessunits;
-	public BusinessunitGrid businessunitGrid;
+	HashMap<String, Businessunit> businessunits;
+	BusinessunitGrid businessunitGrid;
 	Clipper gridClipper;
 	ZoomPan gridZoomPan;
 	ThreadedGraphicBuffer gridGraphicBuffer;
 
+	DetailsView details;
+	Clipper detailsClipper;
+	ZoomPan detailsZoomPan;
+	ThreadedGraphicBuffer detailsGraphicBuffer;
+	boolean updateDetailsOnNextDraw;
+
 	FlyingText flyingText;
 	HelpScreen helpScreen;
-	final int HS_HEIGHT = 500;
+	final int HS_HEIGHT = 540;
 
 	TimeBUGView timeView;
 	SnapshotBUGView snapshotView;
@@ -58,6 +57,10 @@ public class BOMNetworkStatusApp extends PApplet {
 	boolean[] keys = new boolean[526];
 	String sortText = null;
 
+	public static void main(String[] args) {
+		PApplet.main(new String[] { "org.gicentre.vast2012.bomnetworkstatus.BOMNetworkStatusApp" });
+	}
+
 	public void setup() {
 
 		size(1280, 1000);
@@ -69,6 +72,7 @@ public class BOMNetworkStatusApp extends PApplet {
 
 	int loadStage = 0;
 
+	@SuppressWarnings("deprecation")
 	public void draw() {
 		background(255);
 		switch (loadStage++) {
@@ -79,29 +83,37 @@ public class BOMNetworkStatusApp extends PApplet {
 			helpScreen.setHeader("Bank of Money Network Status", 30, 20);
 			helpScreen.putEntry("H", "Show / hide this help");
 			helpScreen.addSpacer();
-			helpScreen.putEntry("A", "Show activity flag in the grid. Press together with 0-5 in temporal mode to display counts for a particular activity flag value.");
-			helpScreen.putEntry("P", "Show policy status in the grid. Press together with 0-5 in temporal mode to display counts for a particular policy status value.");
-			helpScreen.putEntry("C", "Show connections in the grid (snapshot view and temporal view only). Press together with 1-4 in temporal mode to display: 1 - avg, 2 - sd, 3 - min, 4 - max.");
-			helpScreen.putEntry("M + 0-3", "Choose between statistics for: 0 - all machines, 1 - ATMs, 2 - servers, 3 - workstations.");
-			helpScreen.addSpacer();
-			helpScreen.putEntry("T", "Toggle between gloabal / local time in the grid (applicable for temporal view only)");
+			helpScreen.putEntry("V + 1-3", "Toggle snapshot / temporal / overview grid modes (views)");
 			helpScreen.putEntry("L", "Toggle labels on the grid");
 			helpScreen.putEntry("R", "Reset pan and zoom of the grid");
-			helpScreen.putEntry("V + 1-3", "Toggle snapshot / temporal / overview grid modes");
-			helpScreen.putEntry("[ ] + ±", "Increase / decrease lower / upper boundary value colouring in temporal view and for connections (helps to better distunguish between values)");
+			helpScreen.putEntry("D", "Reset pan of the box with machine details for the selected facility");
+			helpScreen.putEntry("T", "Toggle between gloabal / local time in the grid (applicable for temporal view only)");
+			helpScreen.putEntry("[ ] + ±",
+					"Increase / decrease lower / upper boundary value colouring in temporal view and for connections (helps to better distunguish between values)");
 			helpScreen.putEntry("[ ] + SPACE", "Set lower / upper boundary value colouring to default");
+			helpScreen.addSpacer();
+			helpScreen.putEntry("A", "Show activity flag in the grid. Press together with 0-5 in temporal mode to display counts for a particular activity flag value.");
+			helpScreen.putEntry("P", "Show policy status in the grid. Press together with 0-5 in temporal mode to display counts for a particular policy status value.");
+			helpScreen.putEntry("C",
+					"Show connections in the grid (snapshot view and temporal view only). Press together with 1-4 in temporal mode to display: 1 - avg, 2 - sd, 3 - min, 4 - max.");
+			helpScreen.putEntry("M + 0-3", "Choose between statistics for: 0 - all machines, 1 - ATMs, 2 - servers, 3 - workstations.");
 			helpScreen.addSpacer();
 			helpScreen.putEntry("S + 1-4", "Sort facilities within the business units by: 1 - name, 2 - time zone (W↘E), 3 - latitude (N↘S), 4 - longitude (W↘E).");
 			helpScreen.putEntry("S + A + 0-5", "Sort facilities within the business units by counts of machines having activity flag equal to pressed digit at selected time");
 			helpScreen.putEntry("S + P + 0-5", "Sort facilities within the business units by counts of machines having policy status equal to pressed digit at selected time");
-			helpScreen.putEntry("S + C + 1-4", "Sort facilities within the business units by: 1 - average connections, 2 - standard deviation of connections, 3 - minimum connections, 4 - maximum connections");
+			helpScreen
+					.putEntry("S + C + 1-4",
+							"Sort facilities within the business units by: 1 - average connections, 2 - standard deviation of connections, 3 - minimum connections, 4 - maximum connections");
 			helpScreen.putEntry("S + SPACE", "Include / exclude headquarters when sorting");
 			helpScreen.putEntry("G + 1-2", "Sort business units in the grid by: 1 - name, 2 - geographically");
 			helpScreen.addSpacer();
-			helpScreen.putEntry("Mouse actions", "Roll over a facility to see its detailed statistics at a particular time. Click to select a facility permanently. Scroll and drag to pan and zoom the grid.");
+			helpScreen.putEntry("Mouse actions",
+					"Roll over a facility to see its detailed statistics at a particular time. Click to select a facility permanently. Scroll and drag to pan and zoom the grid.");
 			helpScreen.putEntry("ESC", "Deselect currently selected facility");
 			helpScreen.putEntry("← →", "± 15 minutes (press with SHIFT for ± 1 hour; with CONTROL for ± 1 day)");
-			helpScreen.putEntry("↑ ↓", "View details of the next / previous facility in the business unit, when one is selected (press with SHIFT to jump over 5 facilities; with CONTROL to go to first / last facility)");
+			helpScreen
+					.putEntry("↑ ↓",
+							"View details of the next / previous facility in the business unit, when one is selected (press with SHIFT to jump over 5 facilities; with CONTROL to go to first / last facility)");
 
 			return;
 		case 1:
@@ -129,32 +141,48 @@ public class BOMNetworkStatusApp extends PApplet {
 			snapshotView.currentParameter = AbstractBUGView.P_POLICYSTATUS;
 			snapshotView.currentCompactTimestamp = CompactTimestamp.fullTimestampToCompact("2012-02-02 14:00:00");
 			snapshotView.selectedCompactTimestamp = snapshotView.currentCompactTimestamp;
+			snapshotView.resetRange();
 
 			// Time view
 			timeView = new TimeBUGView(businessunitGrid);
 			timeView.currentParameter = AbstractBUGView.P_POLICYSTATUS;
 			timeView.currentValue = 1;
 			timeView.currentCompactTimestamp = CompactTimestamp.fullTimestampToCompact("2012-02-04 08:00:00");
+			timeView.resetRange();
 
 			// Overall view
 			overallView = new OverallView(businessunitGrid);
 			overallView.currentParameter = AbstractBUGView.P_POLICYSTATUS;
 			overallView.currentValue = 1;
 			overallView.currentCompactTimestamp = CompactTimestamp.fullTimestampToCompact("2012-02-04 08:00:00");
+			overallView.resetRange();
 
 			currentView = snapshotView;
 
+			gridClipper = new Clipper(this, new Rectangle(0, 35, (int) businessunitGrid.getWidth(), (int) businessunitGrid.getHeight()));
 			gridZoomPan = new ZoomPan(this);
 			gridZoomPan.setMinZoomScale(1);
 			gridZoomPan.setMaxZoomScale(20);
 			gridZoomPan.setZoomMouseButton(RIGHT);
-			gridClipper = new Clipper(this, new Rectangle(0, 30, (int) businessunitGrid.getWidth(), (int) businessunitGrid.getHeight()));
-			gridGraphicBuffer = new ThreadedGraphicBuffer(this, gridZoomPan, new ThreadedDrawClass(), gridClipper.getClippingRect().getBounds());
+			gridZoomPan.setMouseBoundsMask(gridClipper.getClippingRect().getBounds());
+			gridGraphicBuffer = new ThreadedGraphicBuffer(this, gridZoomPan, new GridThreadedDraw(), gridClipper.getClippingRect().getBounds());
 			gridGraphicBuffer.setUpdateDuringZoomPan(false);
 			gridGraphicBuffer.setUseFadeEffect(true, 20);
 
-			flyingText = new FlyingText(this, (float) (gridClipper.getClippingRect().getBounds().getX() + businessunitGrid.getWidth() / 2),
-					(float) (gridClipper.getClippingRect().getBounds().getY() + businessunitGrid.getHeight() / 2));
+			details = new DetailsView();
+			detailsClipper = new Clipper(this, new Rectangle((int) gridClipper.getClippingRect().getMaxX() + 30, 405, width - 60 - (int) gridClipper.getClippingRect().getMaxX(),
+					height - 340 - 100));
+			detailsZoomPan = new ZoomPan(this);
+			detailsZoomPan.setMinZoomScale(1);
+			detailsZoomPan.setMaxZoomScale(1);
+			detailsZoomPan.setZoomMouseButton(RIGHT);
+			detailsZoomPan.setZoomPanBehaviour(ZoomPanBehaviour.VERTICAL_ONLY);
+			detailsZoomPan.setMouseBoundsMask(detailsClipper.getClippingRect().getBounds());
+			detailsGraphicBuffer = new ThreadedGraphicBuffer(this, detailsZoomPan, new DetailsThreadedDraw(), detailsClipper.getClippingRect().getBounds());
+			detailsGraphicBuffer.setUpdateDuringZoomPan(false);
+
+			flyingText = new FlyingText(this, (float) (gridClipper.getClippingRect().getBounds().getX() + businessunitGrid.getWidth() / 2), (float) (gridClipper.getClippingRect()
+					.getBounds().getY() + businessunitGrid.getHeight() / 2));
 
 			fill(0, 95);
 			textAlign(CENTER, CENTER);
@@ -168,7 +196,8 @@ public class BOMNetworkStatusApp extends PApplet {
 
 		noStroke();
 		fill(220);
-		rect(gridClipper.getClippingRect().getBounds().x, gridClipper.getClippingRect().getBounds().y, gridClipper.getClippingRect().getBounds().width, gridClipper.getClippingRect().getBounds().height);
+		rect(gridClipper.getClippingRect().getBounds().x, gridClipper.getClippingRect().getBounds().y, gridClipper.getClippingRect().getBounds().width, gridClipper
+				.getClippingRect().getBounds().height);
 
 		gridGraphicBuffer.draw();
 		if (currentView.selectionIsLocked) {
@@ -180,10 +209,13 @@ public class BOMNetworkStatusApp extends PApplet {
 			popMatrix();
 			gridClipper.stopClipping();
 		}
+
 		drawTitle();
 		drawBottomRow();
 		drawSelectedFacilityInfo();
 		flyingText.draw();
+
+		stroke(0);
 
 		if (helpScreen.getIsActive())
 			helpScreen.draw();
@@ -195,7 +227,7 @@ public class BOMNetworkStatusApp extends PApplet {
 	protected void drawTitle() {
 		textFont(titleFont);
 		textAlign(LEFT, BASELINE);
-		fill(60);
+		fill(0);
 
 		String title = "";
 
@@ -217,7 +249,7 @@ public class BOMNetworkStatusApp extends PApplet {
 			if (currentView == timeView)
 				title += " - " + BOMDictionary.connectionsToHR(currentView.currentValue);
 		}
-		text(title, 5, 22);
+		text(title, 5, 25);
 	}
 
 	/**
@@ -225,21 +257,21 @@ public class BOMNetworkStatusApp extends PApplet {
 	 */
 	protected void drawBottomRow() {
 		pushMatrix();
-		translate((float) gridClipper.getClippingRect().getMinX() + BusinessunitGrid.PADDING, (float) gridClipper.getClippingRect().getMaxY() + 14);
+		translate((float) gridClipper.getClippingRect().getMinX() + BusinessunitGrid.PADDING, (float) gridClipper.getClippingRect().getMaxY() + 15);
 		textFont(bottomRowFont);
 		textAlign(LEFT, TOP);
 		fill(120);
 
 		// Current time (time range)
 		if (currentView == snapshotView) {
-			text(CompactTimestamp.toHRString(currentView.currentCompactTimestamp), 0, 0);
+			text(CompactTimestamp.toHRString(currentView.currentCompactTimestamp), 5, 0);
 		} else {
 			if (currentView.timeIsRelative)
 				text(CompactTimestamp.toHRString((short) (currentView.currentCompactTimestamp - 191), -3).substring(0, 20) + " ...  "
-						+ CompactTimestamp.toHRString(currentView.currentCompactTimestamp, -3).substring(0, 20), 0, 0);
+						+ CompactTimestamp.toHRString(currentView.currentCompactTimestamp, -3).substring(0, 20), 5, 0);
 			else
 				text(CompactTimestamp.toHRString((short) (currentView.currentCompactTimestamp - 191)) + " ...  " + CompactTimestamp.toHRString(currentView.currentCompactTimestamp),
-						0, 0);
+						5, 0);
 		}
 
 		// Sort order
@@ -259,10 +291,10 @@ public class BOMNetworkStatusApp extends PApplet {
 	}
 
 	protected void drawSelectedFacilityInfo() {
-		
+
 		if (currentView == overallView)
 			return;
-		
+
 		Facility f = currentView.selectedFacility;
 		if (f == null)
 			return;
@@ -270,17 +302,18 @@ public class BOMNetworkStatusApp extends PApplet {
 		MachineGroup mg = f.machinegroups[currentView.currentMachineGroup];
 		MachineGroupStatus mgs = CompactTimestamp.isWithin48HrsWindow(currentView.selectedCompactTimestamp) ? mg.statuses[currentView.selectedCompactTimestamp] : null;
 		pushMatrix();
-		translate((float)gridClipper.getClippingRect().getWidth() + 30, 0);
+		translate((float) detailsClipper.getClippingRect().getMinX(), 0);
 
 		textAlign(LEFT, BASELINE);
 
 		// Title
 		fill(0);
 		textFont(titleFont);
-		text(currentView.selectedFacility.businessunitName + " → " + currentView.selectedFacility.facilityName, 0, 22);
+		text(currentView.selectedFacility.businessunitName + " → " + currentView.selectedFacility.facilityName, 0, 25);
 
 		// Location
 		textFont(selectedInfoFont);
+		translate(0, 3);
 		fill(120);
 		text("Location: ", 0, 45);
 		textAlign(RIGHT);
@@ -294,7 +327,7 @@ public class BOMNetworkStatusApp extends PApplet {
 		text(BOMDictionary.machineGroupToHR(currentView.currentMachineGroup) + " count: " + mg.machinecount
 				+ (currentView.currentMachineGroup != 0 ? " (out of " + f.machinegroups[0].machinecount + ")" : ""), 0, 75);
 		// IP range
-		text("IP range: " + IPConverter.intToStr(mg.ipMin) + " - " + IPConverter.intToStr(mg.ipMax), 0, 90);
+		text("IP range: " + IPConverter.intToStr(mg.ipMin) + " − " + IPConverter.intToStr(mg.ipMax), 0, 90);
 
 		// Time
 		String tsHRAbs = CompactTimestamp.toHRString(currentView.selectedCompactTimestamp);
@@ -323,9 +356,9 @@ public class BOMNetworkStatusApp extends PApplet {
 			translate(0, 16);
 			for (int i = 0; i < 6; i++) {
 				// stripe
-				if (currentView.currentParameter == AbstractBUGView.P_POLICYSTATUS && (currentView == snapshotView || i == currentView.currentValue)) {
+				if ((currentView.selectionIsLocked && mgs.countByPolicyStatus[i] > 0) || (currentView.currentParameter == AbstractBUGView.P_POLICYSTATUS && (currentView == snapshotView || i == currentView.currentValue))) {
 					fill(currentView.getColour(AbstractBUGView.P_POLICYSTATUS, i));
-					rect(11, -8 + 15 * i, 3, 6);
+					rect(11, -8 + 15 * i, 5, 5);
 				}
 
 				fill(0, 120);
@@ -350,7 +383,7 @@ public class BOMNetworkStatusApp extends PApplet {
 
 			// Activity flag
 			pushMatrix();
-			translate(140, 0);
+			translate(145, 0);
 			fill(120);
 			noStroke();
 			textAlign(LEFT);
@@ -359,9 +392,9 @@ public class BOMNetworkStatusApp extends PApplet {
 			translate(0, 16);
 			for (int i = 0; i < 6; i++) {
 				// stripe
-				if (currentView.currentParameter == AbstractBUGView.P_ACTIVITYFLAG && (currentView == snapshotView || i == currentView.currentValue)) {
+				if ((currentView.selectionIsLocked && mgs.countByActivityFlag[i] > 0) || (currentView.currentParameter == AbstractBUGView.P_ACTIVITYFLAG && (currentView == snapshotView || i == currentView.currentValue))) {
 					fill(currentView.getColour(AbstractBUGView.P_ACTIVITYFLAG, i));
-					rect(11, -8 + 15 * i, 3, 6);
+					rect(11, -8 + 15 * i, 5, 5);
 				}
 
 				// value
@@ -396,7 +429,7 @@ public class BOMNetworkStatusApp extends PApplet {
 			translate(0, 16);
 			for (int i = 1; i < 5; i++) {
 				if (i == 3)
-					translate(140, -30);
+					translate(145, -30);
 
 				// value
 				fill(0, 120);
@@ -408,10 +441,54 @@ public class BOMNetworkStatusApp extends PApplet {
 			}
 			popMatrix();
 
+			if (currentView.selectionIsLocked
+					&& (details.currentCompactTimestamp != currentView.selectedCompactTimestamp || details.currentFacility != currentView.selectedFacility || details.currentMachineGroup != currentView.currentMachineGroup)) {
+				if (details.currentFacility == null)
+					detailsZoomPan.reset();
+
+				details.currentCompactTimestamp = currentView.selectedCompactTimestamp;
+				details.currentFacility = currentView.selectedFacility;
+				details.currentMachineGroup = currentView.currentMachineGroup;
+				detailsGraphicBuffer.setUpdateFlag();
+			} else if (!currentView.selectionIsLocked && details.currentFacility != null) {
+				details.currentFacility = null;
+				detailsZoomPan.reset();
+				detailsGraphicBuffer.setUpdateFlag();
+			}
+			if (updateDetailsOnNextDraw)
+				detailsGraphicBuffer.setUpdateFlag();
+
+			if (details.currentFacility != null) {
+				translate(0, 235);
+				rotate((float) Math.PI / 2);
+
+				for (int i = 0; i < 9; i++) {
+					text(BOMDictionary.machineFunctionToHR(i), 0, -28f * i - 2);
+				}
+
+			}
+
+			popMatrix();
+			detailsGraphicBuffer.draw();
+
+			// Details shade
+			pushMatrix();
+			float w = (float) detailsClipper.getClippingRect().getWidth();
+			translate((float) detailsClipper.getClippingRect().getMinX(), (float) detailsClipper.getClippingRect().getMinY() - 1);
+
+			for (int i = 7; i > 0; --i) {
+				fill(255, 255 - i * 32);
+				rect(0, i, w, 1);
+			}
+			translate(0, (float) detailsClipper.getClippingRect().getHeight() + 1);
+			for (int i = 7; i > 0; --i) {
+				fill(255, 255 - i * 32);
+				rect(0, -i, w, 1);
+			}
+
 		}
 
 		popMatrix();
-
 	}
 
 	/* multi-key-press support */
@@ -430,6 +507,14 @@ public class BOMNetworkStatusApp extends PApplet {
 		if (loadStage < 42)
 			return;
 
+		// Toggle help
+		if (key == 'h' && !helpScreen.getIsActive()) {
+			helpScreen.setIsActive(true);
+			return;
+		}
+
+		helpScreen.setIsActive(false);
+
 		boolean keyMore = key == '+' || key == '=';
 		boolean keyLess = key == '-' || key == '_';
 		boolean keySpace = key == ' ';
@@ -443,7 +528,7 @@ public class BOMNetworkStatusApp extends PApplet {
 				flyingText.startFly("Arrange business units by name");
 			} else {
 				businessunitGrid.setLayout(BusinessunitGrid.LAYOUT_GEO);
-				flyingText.startFly("Arrange business units geographically");
+				flyingText.startFly("Arrange business units geographically (stub, rearrangement needed)");
 			}
 			gridGraphicBuffer.setUpdateFlag();
 			return;
@@ -451,7 +536,7 @@ public class BOMNetworkStatusApp extends PApplet {
 
 		// Facility sort order: 1 - name, 2 - timezone and name, 3 - lat, 4 - lon ' ' or a parameter
 		if (checkKey("s") && currentView != overallView) {
-			
+
 			FacilityComparator fc = FacilityComparator.getInstance();
 
 			// Sorting by a parameter
@@ -464,7 +549,7 @@ public class BOMNetworkStatusApp extends PApplet {
 						fc.sortMode = FacilityComparator.SM_POLICY_STATUS;
 						sortText = "count of policy status = " + (keyCode - 0x30);
 					} else if (checkKey("c")) {
-						if (!(keyCode >'0' && keyCode < '5'))
+						if (!(keyCode > '0' && keyCode < '5'))
 							return;
 						fc.sortMode = FacilityComparator.SM_CONNECTIONS;
 						sortText = BOMDictionary.connectionsToHR(keyCode - 0x30) + " connections";
@@ -527,61 +612,59 @@ public class BOMNetworkStatusApp extends PApplet {
 			return;
 		}
 
-		// Show policy status
-		// TODO reimplement
-		if (checkKey("p")) {
-			if (currentView != timeView) {
-				timeView.currentParameter = AbstractBUGView.P_POLICYSTATUS;
-				snapshotView.currentParameter = AbstractBUGView.P_POLICYSTATUS;
-				overallView.currentParameter = AbstractBUGView.P_POLICYSTATUS;
-				flyingText.startFly("Policy status");
-				currentView.resetRange();
-				gridGraphicBuffer.setUpdateFlag();
-			} else if (keyCode >= '0' && keyCode <= '5') {
-				snapshotView.currentParameter = AbstractBUGView.P_POLICYSTATUS;
-				timeView.currentParameter = AbstractBUGView.P_POLICYSTATUS;
-				overallView.currentParameter = AbstractBUGView.P_POLICYSTATUS;
-				timeView.currentValue = keyCode - 0x30;
-				flyingText.startFly("Policy status = " + BOMDictionary.policyStatusToHR(currentView.currentValue));
-				currentView.resetRange();
-				gridGraphicBuffer.setUpdateFlag();
-			}
-			return;
-		}
+		// Show activity flag / connections / policy status
+		if (checkKey("a") || checkKey("c") || checkKey("p")) {
+			int parameter = -1;
+			int value = -1;
+			String text = "";
+			boolean needToResetRange = false;
 
-		// Show activityflag
-		if (checkKey("a")) {
-			if (currentView != timeView) {
-				snapshotView.currentParameter = AbstractBUGView.P_ACTIVITYFLAG;
-				overallView.currentParameter = AbstractBUGView.P_ACTIVITYFLAG;
-				flyingText.startFly("Activity flag");
-				currentView.resetRange();
-				gridGraphicBuffer.setUpdateFlag();
-			} else if (keyCode >= '0' && keyCode <= '5') {
-				snapshotView.currentParameter = AbstractBUGView.P_ACTIVITYFLAG;
-				timeView.currentParameter = AbstractBUGView.P_ACTIVITYFLAG;
-				timeView.currentValue = keyCode - 0x30;
-				flyingText.startFly("Activity flag = " + BOMDictionary.activityFlagToHR(currentView.currentValue));
-				currentView.resetRange();
-				gridGraphicBuffer.setUpdateFlag();
-			}
-			return;
-		}
+			if (keyCode >= '0' && keyCode <= '5')
+				value = keyCode - 0x30;
 
-		// Show connections (total, avg, sd, min, max)
-		if (checkKey("c") && !checkKey("s")) {
-			if (currentView == snapshotView) {
-				currentView.currentParameter = AbstractBUGView.P_CONNECTIONS;
-				flyingText.startFly("Connections");
-				currentView.resetRange();
-				gridGraphicBuffer.setUpdateFlag();
-			} else if (currentView == timeView && keyCode >= '1' && keyCode <= '4'){
-				currentView.currentParameter = AbstractBUGView.P_CONNECTIONS;
-				currentView.currentValue = keyCode - 0x30;
-				flyingText.startFly("Connections - " + BOMDictionary.connectionsToHR(currentView.currentValue));
-				currentView.resetRange();
-				gridGraphicBuffer.setUpdateFlag();
+			if (checkKey("a")) {
+				parameter = AbstractBUGView.P_ACTIVITYFLAG;
+				text = "Activity flag";
+				if (currentView == timeView)
+					text += " = " + BOMDictionary.activityFlagToHR(value);
+				if (currentView.currentParameter == AbstractBUGView.P_CONNECTIONS)
+					needToResetRange = true;
+			} else if (checkKey("c")) {
+				if (currentView == overallView)
+					return;
+
+				if (currentView == timeView && (value < 1 || value > 4))
+					return;
+
+				parameter = AbstractBUGView.P_CONNECTIONS;
+				text = "Connections";
+				if (currentView == timeView)
+					text += " - " + BOMDictionary.connectionsToHR(value);
+				if (currentView.currentParameter != AbstractBUGView.P_CONNECTIONS)
+					needToResetRange = true;
+			} else if (checkKey("p")) {
+				parameter = AbstractBUGView.P_POLICYSTATUS;
+				text = "Policy status";
+				if (currentView == timeView)
+					text += " = " + BOMDictionary.policyStatusToHR(value);
+				if (currentView.currentParameter == AbstractBUGView.P_CONNECTIONS)
+					needToResetRange = true;
 			}
+
+			if (currentView == timeView && value == -1)
+				return;
+
+			if (parameter == -1)
+				return;
+
+			flyingText.startFly(text);
+
+			currentView.currentParameter = parameter;
+			if (value != -1)
+				currentView.currentValue = value;
+			if (needToResetRange)
+				currentView.resetRange();
+			gridGraphicBuffer.setUpdateFlag();
 			return;
 		}
 
@@ -604,12 +687,24 @@ public class BOMNetworkStatusApp extends PApplet {
 			return;
 		}
 
-		// Reset View
+		// Reset Grid View
 		if (key == 'r') {
 			gridZoomPan.reset();
 			gridZoomPan.setPanOffset(0, 0);
-			flyingText.startFly("Reset pan and zoom");
+			flyingText.startFly("Reset grid’s pan and zoom");
 			gridGraphicBuffer.setUpdateFlag();
+			return;
+		}
+
+		// Reset Details
+		if (key == 'd') {
+			if (details.currentFacility == null)
+				return;
+
+			detailsZoomPan.reset();
+			detailsZoomPan.setPanOffset(0, 0);
+			flyingText.startFly("Reset detail’s pan and zoom");
+			detailsGraphicBuffer.setUpdateFlag();
 			return;
 		}
 
@@ -631,12 +726,12 @@ public class BOMNetworkStatusApp extends PApplet {
 
 			if (currentView == oldView)
 				return;
-			
+
 			if (currentView == snapshotView)
 				flyingText.startFly("Snapshot view");
 			else if (currentView == timeView)
 				flyingText.startFly("Timeline view");
-			else 
+			else
 				flyingText.startFly("Overall view");
 
 			if (oldView.selectionIsLocked) {
@@ -658,9 +753,10 @@ public class BOMNetworkStatusApp extends PApplet {
 			if (currentView.currentParameter == AbstractBUGView.P_CONNECTIONS && oldView.currentParameter != AbstractBUGView.P_CONNECTIONS) {
 				currentView.currentValue = 1;
 			}
-			
+
 			currentView.currentMachineGroup = oldView.currentMachineGroup;
 			currentView.resetRange();
+
 			gridGraphicBuffer.setUpdateFlag();
 			return;
 		}
@@ -769,12 +865,6 @@ public class BOMNetworkStatusApp extends PApplet {
 			key = 0; // Prevent applet from closing
 			return;
 		}
-
-		// Toggle help
-		if (key == 'h') {
-			helpScreen.setIsActive(!helpScreen.getIsActive());
-			return;
-		}
 	}
 
 	public void keyReleased() {
@@ -795,7 +885,8 @@ public class BOMNetworkStatusApp extends PApplet {
 			if (!currentView.selectionIsLocked) {
 				PVector mouseCoordWithOffset = new PVector(mouseX, mouseY);
 				PVector convertedMouseCoord = gridZoomPan.getZoomPanState().getDispToCoord(mouseCoordWithOffset);
-				currentView.selectAt((int) convertedMouseCoord.x - (int)gridClipper.getClippingRect().getMinX(), (int) convertedMouseCoord.y - (int)gridClipper.getClippingRect().getMinY());
+				currentView.selectAt((int) convertedMouseCoord.x - (int) gridClipper.getClippingRect().getMinX(), (int) convertedMouseCoord.y
+						- (int) gridClipper.getClippingRect().getMinY());
 			}
 		}
 	}
@@ -803,10 +894,14 @@ public class BOMNetworkStatusApp extends PApplet {
 	public void mouseClicked() {
 		if (loadStage < 42)
 			return;
+
+		helpScreen.setIsActive(false);
+
 		if (gridClipper.getClippingRect().contains(mouseX, mouseY)) {
 			PVector mouseCoordWithOffset = new PVector(mouseX, mouseY);
 			PVector convertedMouseCoord = gridZoomPan.getZoomPanState().getDispToCoord(mouseCoordWithOffset);
-			currentView.selectAt((int) convertedMouseCoord.x - (int)gridClipper.getClippingRect().getMinX(), (int) convertedMouseCoord.y - (int)gridClipper.getClippingRect().getMinY());
+			currentView.selectAt((int) convertedMouseCoord.x - (int) gridClipper.getClippingRect().getMinX(), (int) convertedMouseCoord.y
+					- (int) gridClipper.getClippingRect().getMinY());
 			currentView.selectionIsLocked = currentView.selectedFacility != null;
 		}
 	}
@@ -856,9 +951,13 @@ public class BOMNetworkStatusApp extends PApplet {
 					currentF.lon = Float.valueOf(tokens[3]);
 					currentF.timezoneOffset = Short.valueOf(tokens[4]);
 					currentF.machinegroups[0] = new MachineGroup(Integer.valueOf(tokens[5]));
-					currentF.machinegroups[1] = new MachineGroup(Integer.valueOf(tokens[8]));
-					currentF.machinegroups[2] = new MachineGroup(Integer.valueOf(tokens[6]));
-					currentF.machinegroups[3] = new MachineGroup(Integer.valueOf(tokens[7]));
+					currentF.machinegroups[1] = new MachineGroup(Integer.valueOf(tokens[6]));
+					currentF.machinegroups[2] = new MachineGroup(Integer.valueOf(tokens[7]));
+					currentF.machinegroups[3] = new MachineGroup(Integer.valueOf(tokens[8]));
+					for (int i = 0; i < 4; i++) {
+						currentF.machinegroups[i].ipMin = IPConverter.stringToInt(tokens[9 + 2 * i]);
+						currentF.machinegroups[i].ipMax = IPConverter.stringToInt(tokens[10 + 2 * i]);
+					}
 					currentBu.sortFacilities();
 				}
 			}
@@ -918,14 +1017,27 @@ public class BOMNetworkStatusApp extends PApplet {
 	}
 
 	// Class that implements ThreadedDraw for drawing in a different thread
-	class ThreadedDrawClass implements ThreadedDraw {
+	class GridThreadedDraw implements ThreadedDraw {
 
 		// Code to draw onto the buffer
 		public void threadedDraw(PGraphics canvas, ZoomPanState zoomPanState, Object extraInfo) {
 			canvas.pushMatrix();
 			zoomPanState.transform(canvas);
-			canvas.translate((float)gridClipper.getClippingRect().getMinX(), (float)gridClipper.getClippingRect().getMinY());
+			canvas.translate((float) gridClipper.getClippingRect().getMinX(), (float) gridClipper.getClippingRect().getMinY());
 			currentView.draw(canvas, Thread.currentThread());
+			canvas.popMatrix();
+		}
+	}
+
+	class DetailsThreadedDraw implements ThreadedDraw {
+
+		// Code to draw onto the buffer
+		public void threadedDraw(PGraphics canvas, ZoomPanState zoomPanState, Object extraInfo) {
+			canvas.pushMatrix();
+			zoomPanState.transform(canvas);
+			canvas.translate((float) detailsClipper.getClippingRect().getMinX(), (float) detailsClipper.getClippingRect().getMinY());
+			if (details.draw(canvas, currentView, Thread.currentThread()))
+				updateDetailsOnNextDraw = true;
 			canvas.popMatrix();
 		}
 	}

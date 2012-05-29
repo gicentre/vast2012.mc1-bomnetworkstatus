@@ -46,6 +46,12 @@ public class CompactTimestamp {
 	}
 
 	/**
+	 * Converts "classic" time stamp (string, e.g. 2012-01-01 00:00:00) to CompactTimestamp format (number, short)
+	 */
+	public static Timestamp compactTimestimpToFull(short cts) {
+		return new Timestamp(1000 * (cts * compactTimestampEpochDiff + compactTimestampEpochStart));
+	}
+	/**
 	 * Converts compact timestamp to a human-readable format
 	 */
 	public static String toHRString(short compactTimestamp) {

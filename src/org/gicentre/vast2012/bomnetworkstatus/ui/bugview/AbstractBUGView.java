@@ -17,7 +17,7 @@ public abstract class AbstractBUGView {
 	
 	public boolean rangeIsLocked = false;
 	public float rangeMin = 0;
-	public float rangeMax = 120;
+	public float rangeMax = 1;
 	public float rangeMinLimit = 0;
 	public float rangeMaxLimit = 1;
 	

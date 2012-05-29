@@ -99,6 +99,7 @@ public class OverallView extends CommonBUGView {
 	}
 
 	public void drawLegend(PGraphics canvas, float x, float y, float width, float height) {
+		drawSequentialLegend(canvas, x, y, width, height);
 	}
 
 }
