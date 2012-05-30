@@ -8,6 +8,8 @@ public class FacilityComparator implements Comparator<Facility> {
 	public static final int SM_TIMEZONE = 1;
 	public static final int SM_LAT = 2;
 	public static final int SM_LON = 3;
+	public static final int SM_IP_MIN = 4;
+	public static final int SM_IP_MAX = 5;
 
 	public static final int SM_ACTIVITY_FLAG = 0x10;
 	public static final int SM_POLICY_STATUS = 0x11;
@@ -52,6 +54,13 @@ public class FacilityComparator implements Comparator<Facility> {
 			break;
 		case SM_LON:
 			dp = Integer.signum((int) (100000 * (facility1.lon - facility2.lon)));
+			break;
+		// WARNING: ip addres bigger than 127.255.255.255 are encoded as negative integers!
+		case SM_IP_MIN:
+			dp = Integer.signum(facility1.machinegroups[0].ipMin - facility2.machinegroups[0].ipMin); 
+			break;
+		case SM_IP_MAX:
+			dp = Integer.signum(facility1.machinegroups[0].ipMax - facility2.machinegroups[0].ipMax);
 			break;
 		case SM_ACTIVITY_FLAG:
 			dp = Integer.signum(facility1.machinegroups[sortMachineGroup].statuses[sortComactTimestamp].countByActivityFlag[sortSubmode] - facility2.machinegroups[sortMachineGroup].statuses[sortComactTimestamp].countByActivityFlag[sortSubmode]);

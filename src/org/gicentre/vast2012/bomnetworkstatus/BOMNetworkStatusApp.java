@@ -90,7 +90,7 @@ public class BOMNetworkStatusApp extends PApplet {
 			helpScreen.putEntry("D", "Reset pan of the box with machine details for the selected facility");
 			helpScreen.putEntry("T", "Toggle between gloabal / local time in the grid (applicable for temporal view only)");
 			helpScreen.putEntry("[ ] + ±",
-					"Increase / decrease lower / upper boundary value colouring in temporal view and for connections (helps to better distunguish between values)");
+					"Increase / decrease lower / upper boundary value colouring in temporal view (helps to better distunguish between values)");
 			helpScreen.putEntry("[ ] + SPACE", "Set lower / upper boundary value colouring to default");
 			helpScreen.addSpacer();
 			helpScreen.putEntry("A", "Show activity flag in the grid. Press together with 0-5 in temporal mode to display counts for a particular activity flag value.");
@@ -99,14 +99,14 @@ public class BOMNetworkStatusApp extends PApplet {
 					"Show connections in the grid (snapshot view and temporal view only). Press together with 1-4 in temporal mode to display: 1 - avg, 2 - sd, 3 - min, 4 - max.");
 			helpScreen.putEntry("M + 0-3", "Choose between statistics for: 0 - all machines, 1 - ATMs, 2 - servers, 3 - workstations.");
 			helpScreen.addSpacer();
-			helpScreen.putEntry("S + 1-4", "Sort facilities within the business units by: 1 - name, 2 - time zone (W↘E), 3 - latitude (N↘S), 4 - longitude (W↘E).");
+			helpScreen.putEntry("S + 1-6", "Sort facilities within the business units by: 1 - name, 2 - time zone (W↘E), 3 - latitude (N↘S), 4 - longitude (W↘E), 5, 6 - lowest and highest ip address there");
 			helpScreen.putEntry("S + A + 0-5", "Sort facilities within the business units by counts of machines having activity flag equal to pressed digit at selected time");
 			helpScreen.putEntry("S + P + 0-5", "Sort facilities within the business units by counts of machines having policy status equal to pressed digit at selected time");
 			helpScreen
 					.putEntry("S + C + 1-4",
 							"Sort facilities within the business units by: 1 - average connections, 2 - standard deviation of connections, 3 - minimum connections, 4 - maximum connections");
 			helpScreen.putEntry("S + SPACE", "Include / exclude headquarters when sorting");
-			helpScreen.putEntry("G + 1-2", "Sort business units in the grid by: 1 - name, 2 - geographically");
+			helpScreen.putEntry("G + 1-3", "Sort business units in the grid by: 1 - name, 2 - geographically, 3 - geographically with data centres in the bottom");
 			helpScreen.addSpacer();
 			helpScreen.putEntry("Mouse actions",
 					"Roll over a facility to see its detailed statistics at a particular time. Click to select a facility permanently. Scroll and drag to pan and zoom the grid.");
@@ -566,14 +566,17 @@ public class BOMNetworkStatusApp extends PApplet {
 
 		keys[keyCode] = true;
 
-		// Businessunits in the grid order: 1 - name, 2 - geographically
-		if (checkKey("g") && keyCode >= '1' && keyCode <= '4') {
+		// Businessunits in the grid order
+		if (checkKey("g") && keyCode >= '1' && keyCode <= '3') {
 			if (keyCode == '1') {
 				businessunitGrid.setLayout(BusinessunitGrid.LAYOUT_SEQ);
 				flyingText.startFly("Arrange business units by name");
-			} else {
+			} else if (keyCode == '2') {
 				businessunitGrid.setLayout(BusinessunitGrid.LAYOUT_GEO);
-				flyingText.startFly("Arrange business units geographically (stub, rearrangement needed)");
+				flyingText.startFly("Arrange business units geographically");
+			} else {
+				businessunitGrid.setLayout(BusinessunitGrid.LAYOUT_GEO_EXCL_DC);
+				flyingText.startFly("Arrange business units geographically (with data centres in the bottom)");
 			}
 			gridGraphicBuffer.setUpdateFlag();
 			return;
@@ -616,7 +619,7 @@ public class BOMNetworkStatusApp extends PApplet {
 
 			} else {
 
-				if (keyCode >= '1' && keyCode <= '4') {
+				if (keyCode >= '1' && keyCode <= '6') {
 					fc.sortMode = keyCode - 0x31;
 					switch (fc.sortMode) {
 					case FacilityComparator.SM_NAME:
@@ -630,6 +633,12 @@ public class BOMNetworkStatusApp extends PApplet {
 						break;
 					case FacilityComparator.SM_LON:
 						sortText = "longitude (W↘E)";
+						break;
+					case FacilityComparator.SM_IP_MIN:
+						sortText = "lowest ip address";
+						break;
+					case FacilityComparator.SM_IP_MAX:
+						sortText = "highest ip address";
 						break;
 					}
 					flyingText.startFly("Sort facilities by " + (sortText == null ? "name" : sortText));
