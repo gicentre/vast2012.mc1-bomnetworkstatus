@@ -1,9 +1,11 @@
-package org.gicentre.vast2012.bomnetworkstatus.ui.bugview;
+package org.gicentre.vast2012.bomnetworkstatus.ui;
 
+import org.gicentre.vast2012.bomnetworkstatus.BOMNetworkStatusApp;
 import org.gicentre.vast2012.bomnetworkstatus.Facility;
 import org.gicentre.vast2012.bomnetworkstatus.MachineDetails;
 import org.gicentre.vast2012.bomnetworkstatus.MachineGroupDetails;
 import org.gicentre.vast2012.bomnetworkstatus.MachineGroupDetailsCache;
+import org.gicentre.vast2012.bomnetworkstatus.ui.bugview.AbstractBUGView;
 
 import java.awt.Font;
 import processing.core.PFont;
@@ -13,7 +15,7 @@ public class DetailsView {
 
 	private static final int UNIT_SIZE = 5;
 	private static final int COL_WIDTH = 28;
-	private static final int MARGIN_TOP = 6;
+	private static final int MARGIN_TOP = BOMNetworkStatusApp.DETAILS_CAPTIONS_HEIGHT + 6;
 
 	public Facility currentFacility;
 	public short currentCompactTimestamp;
@@ -22,6 +24,8 @@ public class DetailsView {
 	protected MachineGroupDetails currentMachineGroupDetails;
 
 	public MachineDetails selectedMachineDetails;
+	public int selectedColumnMachineCount;
+	public int selectedColumnMachineSeq;
 
 	PFont mainFont = new PFont(new Font("Arial", 0, 14), true);
 	
@@ -64,6 +68,9 @@ public class DetailsView {
 		int offsetX = 0;
 		int offsetY = 0;
 		int size = currentMachineGroupDetails.details.size();
+		
+		boolean showThisColumn = false;
+		int colourToAdd = 0;
 		for (int i = 0; i < size; ++i) {
 			if (thread.isInterrupted())
 				break;
@@ -73,16 +80,25 @@ public class DetailsView {
 			if (i == 0 || md.machineFunction != currentMachineGroupDetails.details.get(i - 1).machineFunction) {
 				offsetX = COL_WIDTH * md.machineFunction;
 				offsetY = 0;
-			}
 
-			if (currentMachineGroup == 0 || currentMachineGroup == md.machineGroup) {
-				canvas.fill(gridView.getColour(AbstractBUGView.P_POLICYSTATUS, md.policyStatus));
-				canvas.rect(offsetX, offsetY, UNIT_SIZE, UNIT_SIZE);
-				canvas.fill(gridView.getColour(AbstractBUGView.P_ACTIVITYFLAG, md.activityFlag));
-				canvas.rect(offsetX + 1 * UNIT_SIZE, offsetY, UNIT_SIZE, UNIT_SIZE);
-				canvas.fill(gridView.getConnectionsColour(canvas, md.numConnections));
-				canvas.rect(offsetX + 2 * UNIT_SIZE, offsetY, UNIT_SIZE, UNIT_SIZE);
+				if (currentMachineGroup == 0)
+					showThisColumn = true;
+				else if (currentMachineGroup < 4)
+					showThisColumn =  md.machineClass == currentMachineGroup;
+				else if (currentMachineGroup == 4)
+					showThisColumn = md.machineClass == 1;
+				else
+					showThisColumn = currentMachineGroup == 3 + md.machineFunction;
+				
+				colourToAdd = showThisColumn ? 0xFFFFFFFF : 0x44FFFFFF;
 			}
+			
+			canvas.fill(gridView.getColour(AbstractBUGView.P_POLICYSTATUS, md.policyStatus) & colourToAdd);
+			canvas.rect(offsetX, offsetY, UNIT_SIZE, UNIT_SIZE);
+			canvas.fill(gridView.getColour(AbstractBUGView.P_ACTIVITYFLAG, md.activityFlag) & colourToAdd);
+			canvas.rect(offsetX + 1 * UNIT_SIZE, offsetY, UNIT_SIZE, UNIT_SIZE);
+			canvas.fill(gridView.getConnectionsColour(canvas, md.numConnections) & colourToAdd);
+			canvas.rect(offsetX + 2 * UNIT_SIZE, offsetY, UNIT_SIZE, UNIT_SIZE);
 			offsetY += UNIT_SIZE;
 		}
 	}
@@ -90,8 +106,10 @@ public class DetailsView {
 	public void selectAt(int x, int y) {
 		y -= MARGIN_TOP;
 		selectedMachineDetails = null;
+		selectedColumnMachineCount = -1;
+		selectedColumnMachineSeq = -1;
 
-		if (x < 0 || y < 0)
+		if (x < 0)
 			return;
 
 		if (currentMachineGroupDetails == null || currentMachineGroupDetails.details.size() == 0)
@@ -100,15 +118,19 @@ public class DetailsView {
 		try {
 			for (int i = 0; i < 9; i++) {
 				if (x <= 3 * UNIT_SIZE) {
+					selectedColumnMachineCount = currentMachineGroupDetails.firstElements[i+1] - currentMachineGroupDetails.firstElements[i];
+					if (y < 0)
+						return;
+					int candidateMachineSeq = 0;
 					for (int m = currentMachineGroupDetails.firstElements[i];; m++) {
 						MachineDetails md = currentMachineGroupDetails.details.get(m);
 						if (md.machineFunction != i)
 							return;
-						if (currentMachineGroup != 0 && currentMachineGroup != md.machineGroup)
-							continue;
 						y -= UNIT_SIZE;
+						++candidateMachineSeq;
 						if (y < UNIT_SIZE) {
 							selectedMachineDetails = md;
+							selectedColumnMachineSeq = candidateMachineSeq;
 							return;
 						}
 
@@ -121,5 +143,11 @@ public class DetailsView {
 			}
 		} catch (IndexOutOfBoundsException e) {
 		}
+	}
+
+	public void resetSelected() {
+		selectedMachineDetails = null;
+		selectedColumnMachineCount = -1;
+		selectedColumnMachineSeq = -1;
 	}
 }

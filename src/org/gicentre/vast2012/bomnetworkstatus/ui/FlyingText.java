@@ -38,6 +38,8 @@ import processing.core.PGraphics;
 
 public class FlyingText {
 
+	public static final int FRAMES = 60;
+
 	private class FlyingTextInstance {
 		String text = null;
 		int frame = 0;
@@ -71,15 +73,17 @@ public class FlyingText {
 
 	public void draw() {
 		for (FlyingTextInstance instance : new CopyOnWriteArrayList<FlyingTextInstance>(instances)) {
-			if (instance.frame > 60)
+			if (instance.frame > FRAMES)
 				instances.remove(instance);
 
-			PFont flyingTextFont = new PFont(new Font("Helvetica", 0, (int) (25 + 0.3f * instance.frame)), true);
+			// tg(x*2.2+pi/2+0.65)/5 + 0.25 - zoom function x[0, 1] y ≈ (0, 1) for easing
+			// tg(x*2.2+pi/2+0.5)/4 + 0.4
+			PFont flyingTextFont = new PFont(new Font("Helvetica", 0, (int) (20 + (Math.tan(2.2f * instance.frame / FRAMES + Math.PI/2 + 0.5) / 4 + 0.4) * 40)), true);
 			float opacity = flyingTextMaxOpacity;
-			if (instance.frame < 20)
+			if (instance.frame < FRAMES / 3)
 				opacity = PApplet.lerp(0, flyingTextMaxOpacity, 0.05f * instance.frame);
-			else if (instance.frame > 30)
-				opacity = PApplet.lerp(flyingTextMaxOpacity, 0, 1 - (60f - instance.frame) / 30f);
+			else if (instance.frame > FRAMES / 2)
+				opacity = PApplet.lerp(flyingTextMaxOpacity, 0, 1 - 2f * (FRAMES - instance.frame) / FRAMES);
 
 			aContext.textFont(flyingTextFont);
 			aContext.textAlign(PGraphics.CENTER, PGraphics.BASELINE);

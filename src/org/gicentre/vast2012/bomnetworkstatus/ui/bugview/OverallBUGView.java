@@ -9,9 +9,9 @@ import org.gicentre.vast2012.bomnetworkstatus.ui.BusinessunitGrid;
 
 import processing.core.PGraphics;
 
-public class OverallView extends CommonBUGView {
+public class OverallBUGView extends CommonBUGView {
 
-	public OverallView(BusinessunitGrid grid) {
+	public OverallBUGView(BusinessunitGrid grid) {
 		super(grid);
 	}
 

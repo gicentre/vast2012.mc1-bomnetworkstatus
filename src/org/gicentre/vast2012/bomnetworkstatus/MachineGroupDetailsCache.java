@@ -4,7 +4,6 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.Collections;
 import java.util.EventObject;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -14,12 +13,15 @@ import javax.swing.event.EventListenerList;
 @SuppressWarnings("serial")
 public class MachineGroupDetailsCache extends Thread {
 
-	public static String dbURL = "jdbc:postgresql://localhost/vast2012_mc1";
-	public static String dbUser = "vast";
-	public static String dbPassword = "vast";
+	private static final String dbURL = "jdbc:postgresql://localhost/vast2012_mc1";
+	private static final String dbUser = "vast";
+	private static final String dbPassword = "vast";
 
-	private static final int CACHE_MAX_SIZE = 100000;
-	private static final int DETAILS_PER_REQUEST = 5000;
+	private static final int CACHE_MAX_SIZE = 200000;
+	private static final int DETAILS_PER_REQUEST = 10000;
+	private static final int DETAILS_PER_FIRST_REQUEST = 2000;
+	
+	
 
 	LinkedHashMap<String, MachineGroupDetails> cache;
 	public boolean dataChanged;
@@ -94,13 +96,14 @@ public class MachineGroupDetailsCache extends Thread {
 		for (MachineGroupDetails mgd : cache.values()) {
 			if (!mgd.loadingIsFinished) {
 				try {
+					int initialMGDSize = mgd.details.size();
 					String stmtStr = "SELECT ipaddr, policystatus, activityflag, numconnections, machineclass, machinefunction "
-							+ "FROM metastatus_ext "
+							+ "FROM metastatus_ext_sorted "
 							+ "WHERE businessunit = '" + mgd.businessunitName + "' " + "AND facility = '" + mgd.facilityName + "' " + "AND healthtime = '"
 							+ CompactTimestamp.compactTimestimpToFull(mgd.compactTimestamp) + "' "
 							//+ "ORDER BY machinefunction, ipaddr "
-							+ "OFFSET " + mgd.details.size() + " "
-							+ "LIMIT " + DETAILS_PER_REQUEST;
+							+ "OFFSET " + initialMGDSize + " "
+							+ "LIMIT " + (initialMGDSize == 0 ? DETAILS_PER_FIRST_REQUEST : DETAILS_PER_REQUEST);
 					ResultSet rs = conn.createStatement().executeQuery(stmtStr);
 
 					int detailsCollected = 0;
@@ -110,17 +113,17 @@ public class MachineGroupDetailsCache extends Thread {
 						md.policyStatus = rs.getByte(2);
 						md.activityFlag = rs.getByte(3);
 						md.numConnections = rs.getByte(4);
-						md.machineGroup = BOMDictionary.machineGroupFromHR(rs.getString(5));
+						md.machineClass = BOMDictionary.machineClassFromHR(rs.getString(5));
 						md.machineFunction = BOMDictionary.machineFunctionFromHR(rs.getString(6));
 						mgd.details.add(md);
 						++detailsCollected;
 					}
 
-					if (detailsCollected < DETAILS_PER_REQUEST) {
+					if (detailsCollected < (initialMGDSize == 0 ? DETAILS_PER_FIRST_REQUEST : DETAILS_PER_REQUEST)) {
 						mgd.loadingIsFinished = true;
 					}
 
-					Collections.sort(mgd.details);
+					mgd.sortIfNeeded();
 					mgd.calculateFirstElements();
 
 					if (detailsCollected > 0) 
@@ -138,8 +141,11 @@ public class MachineGroupDetailsCache extends Thread {
 	public MachineGroupDetails get(String businessunitName, String facilityName, short compactTimestamp) {
 		MachineGroupDetails mgd = cache.get(generateHash(businessunitName, facilityName, compactTimestamp));
 
-		if (mgd != null && !mgd.loadingIsFinished)
-			return mgd.clone();
+		if (mgd != null) {
+			mgd.sortIfNeeded();
+			if (!mgd.loadingIsFinished)
+				return mgd.clone();
+		}
 
 		return mgd;
 	}
