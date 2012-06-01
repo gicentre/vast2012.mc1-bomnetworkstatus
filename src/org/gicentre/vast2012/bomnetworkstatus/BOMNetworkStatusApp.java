@@ -393,7 +393,7 @@ public class BOMNetworkStatusApp extends PApplet {
 				text(String.valueOf(i), 0, 15 * i);
 				// machine count
 				textAlign(RIGHT);
-				text(mgs.countByPolicyStatus[i], 60, 15 * i);
+				text((int)mgs.countByPolicyStatus[i], 60, 15 * i);
 				// %
 				if (mg.machinecount > 0) {
 					fill(0, 60);
@@ -430,7 +430,7 @@ public class BOMNetworkStatusApp extends PApplet {
 				text(String.valueOf(i), 0, 15 * i);
 				// machine count
 				textAlign(RIGHT);
-				text(mgs.countByActivityFlag[i], 60, 15 * i);
+				text((int)mgs.countByActivityFlag[i], 60, 15 * i);
 
 				// %
 				if (mg.machinecount > 0) {

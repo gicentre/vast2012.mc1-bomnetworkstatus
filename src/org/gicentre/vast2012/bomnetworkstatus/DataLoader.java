@@ -86,7 +86,7 @@ public class DataLoader extends Thread {
 			// Skipping the first line with headers
 			String[] t1 = reader.readLine().split("	");
 
-			int currentValue;
+			char currentValue;
 
 			l = 0;
 			while (true) {
@@ -152,7 +152,7 @@ public class DataLoader extends Thread {
 
 						
 						for (int i = 0; i < 6; i++) {
-							currentValue = Integer.parseInt(tokens[3 + currentMachineFunction * 6 + i]);
+							currentValue = (char)Integer.parseInt(tokens[3 + currentMachineFunction * 6 + i]);
 							if (currentMachineFunction != 0) // ATMs are not forming a separate group because they have only one machine function
 								currentMFStatus.countByPolicyStatus[i] = currentValue;
 							currentMCStatus.countByPolicyStatus[i] += currentValue;
@@ -181,7 +181,7 @@ public class DataLoader extends Thread {
 						
 
 						for (int i = 0; i < 6; i++) {
-							currentValue = Integer.parseInt(tokens[3 + 54 + currentMachineFunction * 6 + i]);
+							currentValue = (char)Integer.parseInt(tokens[3 + 54 + currentMachineFunction * 6 + i]);
 							if (currentMachineFunction != 0) // ATMs are not forming a separate group because they have only one machine function
 								currentMFStatus.countByActivityFlag[i] = currentValue;
 							currentMCStatus.countByActivityFlag[i] += currentValue;
