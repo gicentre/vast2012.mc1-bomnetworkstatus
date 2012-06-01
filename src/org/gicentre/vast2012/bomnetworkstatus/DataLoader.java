@@ -82,9 +82,7 @@ public class DataLoader extends Thread {
 
 			// Reading statuses for all facilities
 			reader = new BufferedReader(new InputStreamReader(new FileInputStream("data/facilitystatus.tab")));
-			// reader = createReader("facilitystatus_short.tab");
-			// Skipping the first line with headers
-			String[] t1 = reader.readLine().split("	");
+			reader.readLine(); // Skipping the first line with headers
 
 			char currentValue;
 

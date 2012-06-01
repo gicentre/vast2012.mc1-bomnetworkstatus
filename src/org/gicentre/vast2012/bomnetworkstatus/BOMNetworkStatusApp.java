@@ -47,7 +47,7 @@ public class BOMNetworkStatusApp extends PApplet {
 
 	FlyingText flyingText;
 	HelpScreen helpScreen;
-	final int HS_HEIGHT = 540;
+	final int HS_HEIGHT = 600;
 
 	TimeBUGView timeView;
 	SnapshotBUGView snapshotView;
@@ -100,7 +100,11 @@ public class BOMNetworkStatusApp extends PApplet {
 			helpScreen.putEntry("A", "Show activity flag in the grid. Press together with 0-5 in temporal mode to display counts for a particular activity flag value.");
 			helpScreen.putEntry("C",
 					"Show connections in the grid (snapshot view and temporal view only). Press together with 1-4 in temporal mode to display: 1 - avg, 2 - sd, 3 - min, 4 - max.");
-			helpScreen.putEntry("M + 0-3", "Choose between statistics for: 0 - all machines, 1 - ATMs, 2 - servers, 3 - workstations.");
+			helpScreen.putEntry("M + SPACE, 1-9, 0, -", "Choose between statistics for:\n" +
+					"        SPACE - all machines,\n" +
+					"        1 - ATMs, 2 - servers, 3 - workstations,\n" +
+					"        4 - servers / compute, 5 - servers / email, 6 - servers / file servers, 7 - servers / multiple, 8 - servers / web,\n" +
+					"        9 - workstations / loan, 0 - workstations / office, - - workstations / teller");
 			helpScreen.addSpacer();
 			helpScreen.putEntry("G + 1-3", "Sort business units in the grid by: 1 - name, 2 - geographically, 3 - geographically with data centres in the bottom");
 			helpScreen.putEntry("D + 1-4", "Sort machines within a facility in columns by: 1 - ip address, 2 - activity flag, 3 - policy status, 4 - number of connections");
@@ -338,7 +342,7 @@ public class BOMNetworkStatusApp extends PApplet {
 		textFont(selectedInfoFont);
 		translate(0, 3);
 		fill(120);
-		text("Location: ", 0, 45);
+		text("location: ", 0, 45);
 		textAlign(RIGHT);
 		text(String.format("%.4f", Math.abs(f.lat)) + "", 120, 45);
 		text(String.format("%.4f", Math.abs(f.lon)) + "", 200, 45);
@@ -347,11 +351,15 @@ public class BOMNetworkStatusApp extends PApplet {
 		text(" W", 200, 45);
 
 		// Machine count
-		text(BOMDictionary.machineGroupToHR(currentView.currentMachineGroup) + " count: " + mg.machinecount
-				+ (currentView.currentMachineGroup != 0 ? " (out of " + f.machinegroups[0].machinecount + ")" : ""), 0, 75);
+		String sCount = BOMDictionary.machineGroupToHR(currentView.currentMachineGroup) + " count: " + mg.machinecount;
+		String sCount2 = sCount + (currentView.currentMachineGroup != 0 ? " (out of " + f.machinegroups[0].machinecount + ")" : "");
+		if (textWidth(sCount2) <= detailsClipper.getClippingRect().getWidth())
+			sCount = sCount2;
+		text(sCount, 0, 75);
+		
 		// IP range
 		String ipr = IPConverter.intToStr(mg.ipMin) + " − " + IPConverter.intToStr(mg.ipMax);
-		if (ipr.length() > 1)
+		if (ipr.length() > 3)
 			text("IP range: " + ipr , 0, 90);
 
 		// Time
@@ -551,7 +559,7 @@ public class BOMNetworkStatusApp extends PApplet {
 				fill(120);
 				if (md != null) {
 					textAlign(LEFT, TOP);
-					String str = BOMDictionary.machineClassToHR(md.machineClass) + (md.machineFunction != 0 ? "/" + BOMDictionary.machineFunctionToHR(md.machineFunction) : "")
+					String str = BOMDictionary.machineClassToHR(md.machineClass) + (md.machineFunction != 0 ? " / " + BOMDictionary.machineFunctionToHR(md.machineFunction) : "")
 							+ ", " + details.selectedColumnMachineSeq;
 					String str2 = str + "/" + details.selectedColumnMachineCount;
 					String ip = IPConverter.intToStr(md.ipaddr);
