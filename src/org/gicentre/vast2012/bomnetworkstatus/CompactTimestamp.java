@@ -14,7 +14,7 @@ import java.util.Date;
 public class CompactTimestamp {
 
 	protected static long compactTimestampEpochStart = 1328170500; // 2012-02-02 08:15:00
-	protected static long compactTimestampEpochDiff = 60 * 15; // 15 mins between times
+	protected static long compactTimestampEpochDiff = 60 * 15; // 15 mins between time
 
 	protected static SimpleDateFormat datetimeFormatter = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 	protected static SimpleDateFormat datetimeFormatterNoSec = new SimpleDateFormat("yyyy-MM-dd HH:mm");

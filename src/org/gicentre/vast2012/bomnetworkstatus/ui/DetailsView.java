@@ -85,8 +85,6 @@ public class DetailsView {
 					showThisColumn = true;
 				else if (currentMachineGroup < 4)
 					showThisColumn =  md.machineClass == currentMachineGroup;
-				else if (currentMachineGroup == 4)
-					showThisColumn = md.machineClass == 1;
 				else
 					showThisColumn = currentMachineGroup == 3 + md.machineFunction;
 				

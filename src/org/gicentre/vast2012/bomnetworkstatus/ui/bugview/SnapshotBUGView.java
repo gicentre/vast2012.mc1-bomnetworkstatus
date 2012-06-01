@@ -86,10 +86,10 @@ public class SnapshotBUGView extends CommonBUGView {
 						}
 					} else {
 						// Connections
-						int minX = (int) ((mgs.connections[3] - rangeMin) / (rangeMax - rangeMin) * 192);
-						int maxX = (int) ((mgs.connections[4] - rangeMin) / (rangeMax - rangeMin) * 192);
-						int avgX = (int) ((mgs.connections[1] - rangeMin) / (rangeMax - rangeMin) * 192);
-						int sdX = (int) ((mgs.connections[2]) / (rangeMax - rangeMin) * 192);
+						int minX = (int) ((mgs.connections[2] - rangeMin) / (rangeMax - rangeMin) * 192);
+						int maxX = (int) ((mgs.connections[3] - rangeMin) / (rangeMax - rangeMin) * 192);
+						int avgX = (int) ((mgs.connections[0] - rangeMin) / (rangeMax - rangeMin) * 192);
+						int sdX = (int) ((mgs.connections[1]) / (rangeMax - rangeMin) * 192);
 
 						// Min - Max
 						float minXCorrected = offsetX + Math.max(Math.min(minX, 191), 0);

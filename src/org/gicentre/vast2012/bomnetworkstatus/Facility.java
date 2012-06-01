@@ -22,7 +22,7 @@ public class Facility {
 	public short timezoneOffset;
 
 	// 0 = all, 1 = atm, 2 = server, 3 = workstation
-	public MachineGroup[] machinegroups = new MachineGroup[4];
+	public MachineGroup[] machinegroups = new MachineGroup[1+3+8];
 	
 	/**
 	 * Returns the value of the number in the facility name (for branches only).

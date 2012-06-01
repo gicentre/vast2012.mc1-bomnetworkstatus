@@ -4,11 +4,9 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.EventObject;
+import java.util.ConcurrentModificationException;
 import java.util.LinkedHashMap;
 import java.util.Map;
-
-import javax.swing.event.EventListenerList;
 
 @SuppressWarnings("serial")
 public class MachineGroupDetailsCache extends Thread {
@@ -28,13 +26,6 @@ public class MachineGroupDetailsCache extends Thread {
 
 	Connection conn;
 
-	EventListenerList ChangedListeners = new EventListenerList();
-	public class ChangedEvent extends EventObject {
-		public ChangedEvent(MachineGroupDetailsCache source) {
-			super((Object) source);
-		}
-	}
-	
 	public MachineGroupDetailsCache() {
 		super();
 
@@ -93,6 +84,7 @@ public class MachineGroupDetailsCache extends Thread {
 	 * Makes one request to database
 	 */
 	public void processLoadQueue() {
+		try {
 		for (MachineGroupDetails mgd : cache.values()) {
 			if (!mgd.loadingIsFinished) {
 				try {
@@ -135,6 +127,9 @@ public class MachineGroupDetailsCache extends Thread {
 
 				return;
 			}
+		}
+		} catch (ConcurrentModificationException e) {
+			System.err.println("Concurrent cache modification in processLoadQueue(). Exception catched.");
 		}
 	}
 

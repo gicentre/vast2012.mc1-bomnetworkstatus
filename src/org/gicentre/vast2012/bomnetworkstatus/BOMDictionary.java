@@ -17,21 +17,21 @@ public class BOMDictionary {
 		case 3:
 			return "workstations";
 		case 3 + 1:
-			return "servers — compute";
+			return "servers/compute";
 		case 3 + 2:
-			return "servers — email";
+			return "servers/email";
 		case 3 + 3:
-			return "servers — file server";
+			return "servers/file server";
 		case 3 + 4:
-			return "servers — multiple";
+			return "servers/multiple";
 		case 3 + 5:
-			return "servers — web";
+			return "servers/web";
+		case 3 + 6:
+			return "workstations/loan";
 		case 3 + 7:
-			return "workstations — loan";
+			return "workstations/office";
 		case 3 + 8:
-			return "workstations — office";
-		case 3 + 9:
-			return "workstations — teller";
+			return "workstations/teller";
 		}
 		return null;
 	}
@@ -177,14 +177,12 @@ public class BOMDictionary {
 	public static String connectionsToHR(int connectionParameter) {
 		switch (connectionParameter) {
 		case 0:
-			return "count";
-		case 1:
 			return "avg";
-		case 2:
+		case 1:
 			return "sd";
-		case 3:
+		case 2:
 			return "min";
-		case 4:
+		case 3:
 			return "max";
 		}
 		return "unknown";

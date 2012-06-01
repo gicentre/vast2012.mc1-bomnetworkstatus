@@ -2,7 +2,6 @@ package org.gicentre.vast2012.bomnetworkstatus;
 
 import java.awt.Rectangle;
 import java.awt.event.KeyEvent;
-import java.io.BufferedReader;
 import java.util.HashMap;
 
 import org.gicentre.utils.gui.Clipper;
@@ -29,7 +28,7 @@ import processing.core.PVector;
 public class BOMNetworkStatusApp extends PApplet {
 
 	private static final long serialVersionUID = 4320695214813440866L;
-	
+
 	public static int DETAILS_CAPTIONS_HEIGHT = 90;
 	public static int DETAILS_Y = 345;
 
@@ -61,6 +60,7 @@ public class BOMNetworkStatusApp extends PApplet {
 	PFont bottomRowFont;
 	boolean[] keys = new boolean[526];
 	String sortText = null;
+	DataLoader dataLoader;
 
 	public static void main(String[] args) {
 		PApplet.main(new String[] { "org.gicentre.vast2012.bomnetworkstatus.BOMNetworkStatusApp" });
@@ -124,19 +124,25 @@ public class BOMNetworkStatusApp extends PApplet {
 
 			return;
 		case 1:
+			// Starting loading the data
+			dataLoader = new DataLoader();
+			return;
+			
+		case 2:			
+			helpScreen.draw();
+			
+			if (dataLoader.ready == true) {
+				businessunits = dataLoader.businessunits;
+				dataLoader.interrupt();
+				dataLoader = null;
+				return;
+			}
+			
 			fill(0, 95);
 			textAlign(CENTER, CENTER);
 			text("Loading facility status data...", width / 2, height / 2 + HS_HEIGHT / 2);
-			helpScreen.draw();
-			stroke(10);
-			return;
-		case 2:
-			// Loading the data
-			businessunits = loadFaclityStatusData();
-			fill(0, 95);
-			textAlign(CENTER, CENTER);
-			text("Preparing the grid...", width / 2, height / 2 + HS_HEIGHT / 2);
-			helpScreen.draw();
+			text((int) (dataLoader.progress * 100) + "%", width / 2, height / 2 + HS_HEIGHT / 2 + 20);
+			--loadStage;
 			return;
 
 		case 3:
@@ -177,8 +183,8 @@ public class BOMNetworkStatusApp extends PApplet {
 			gridGraphicBuffer.setUseFadeEffect(true, 20);
 
 			details = new DetailsView();
-			detailsClipper = new Clipper(this, new Rectangle((int) gridClipper.getClippingRect().getMaxX() + 30, DETAILS_Y, width - 60 - (int) gridClipper.getClippingRect().getMaxX(),
-					height - DETAILS_Y - 80));
+			detailsClipper = new Clipper(this, new Rectangle((int) gridClipper.getClippingRect().getMaxX() + 30, DETAILS_Y, width - 60
+					- (int) gridClipper.getClippingRect().getMaxX(), height - DETAILS_Y - 80));
 			detailsZoomPan = new ZoomPan(this);
 			detailsZoomPan.setMinZoomScale(0.0025);
 			detailsZoomPan.setMaxZoomScale(5);
@@ -344,7 +350,9 @@ public class BOMNetworkStatusApp extends PApplet {
 		text(BOMDictionary.machineGroupToHR(currentView.currentMachineGroup) + " count: " + mg.machinecount
 				+ (currentView.currentMachineGroup != 0 ? " (out of " + f.machinegroups[0].machinecount + ")" : ""), 0, 75);
 		// IP range
-		text("IP range: " + IPConverter.intToStr(mg.ipMin) + " − " + IPConverter.intToStr(mg.ipMax), 0, 90);
+		String ipr = IPConverter.intToStr(mg.ipMin) + " − " + IPConverter.intToStr(mg.ipMax);
+		if (ipr.length() > 1)
+			text("IP range: " + ipr , 0, 90);
 
 		// Time
 		String tsHRAbs = CompactTimestamp.toHRString(currentView.selectedCompactTimestamp);
@@ -446,17 +454,17 @@ public class BOMNetworkStatusApp extends PApplet {
 			text("Connections", 0, 0);
 			textFont(selectedInfoFont);
 			translate(0, 16);
-			for (int i = 1; i < 5; i++) {
-				if (i == 3)
+			for (int i = 0; i < 4; i++) {
+				if (i == 2)
 					translate(145, -30);
 
 				// value
 				fill(0, 120);
 				textAlign(LEFT);
-				text(BOMDictionary.connectionsToHR(i), 0, 15 * (i - 1));
+				text(BOMDictionary.connectionsToHR(i), 0, 15 * (i));
 				// connections
 				textAlign(RIGHT);
-				text((int) mgs.connections[i], 90, 15 * (i - 1));
+				text((int) mgs.connections[i], 90, 15 * (i));
 			}
 			popMatrix();
 
@@ -494,7 +502,7 @@ public class BOMNetworkStatusApp extends PApplet {
 				--framesToUpdateDetailsGraphicBuffer;
 
 			popMatrix(); // Top shift - end
-			
+
 			if (details.currentFacility != null) {
 
 				float w = (float) detailsClipper.getClippingRect().getWidth();
@@ -502,15 +510,15 @@ public class BOMNetworkStatusApp extends PApplet {
 
 				pushMatrix(); // Stuff around graphic buffer - begin
 				translate(0, y);
-				
+
 				PMatrix pm = getMatrix();
 				resetMatrix();
 				detailsGraphicBuffer.draw();
 				setMatrix(pm);
-				
-				fill (255);
+
+				fill(255);
 				rect(0, 0, w, DETAILS_CAPTIONS_HEIGHT);
-				
+
 				rotate((float) Math.PI / 2);
 				translate(DETAILS_CAPTIONS_HEIGHT - 5, 0);
 				fill(120);
@@ -519,31 +527,32 @@ public class BOMNetworkStatusApp extends PApplet {
 				}
 				translate(-DETAILS_CAPTIONS_HEIGHT + 5, 0);
 				rotate(-(float) Math.PI / 2);
-				
+
 				// Details shade
 				translate(0, DETAILS_CAPTIONS_HEIGHT - 1);
-				
+
 				for (int i = 7; i > 0; --i) {
 					fill(255, 255 - i * 32);
 					rect(0, i, w, 1);
 				}
-				
+
 				popMatrix();
-				
+
 				pushMatrix();
 				translate(0, (float) detailsClipper.getClippingRect().getMaxY() + 1);
 				for (int i = 7; i > 0; --i) {
 					fill(255, 255 - i * 32);
 					rect(0, -i, w, 1);
 				}
-				
+
 				// Selected machine details
 				MachineDetails md = details.selectedMachineDetails;
 				translate(0, 5);
 				fill(120);
 				if (md != null) {
 					textAlign(LEFT, TOP);
-					String str = BOMDictionary.machineClassToHR(md.machineClass) + (md.machineFunction != 0 ? "/" + BOMDictionary.machineFunctionToHR(md.machineFunction) : "") + ", " + details.selectedColumnMachineSeq;
+					String str = BOMDictionary.machineClassToHR(md.machineClass) + (md.machineFunction != 0 ? "/" + BOMDictionary.machineFunctionToHR(md.machineFunction) : "")
+							+ ", " + details.selectedColumnMachineSeq;
 					String str2 = str + "/" + details.selectedColumnMachineCount;
 					String ip = IPConverter.intToStr(md.ipaddr);
 					// Making sure that ip address and n/total do not overlap
@@ -553,7 +562,7 @@ public class BOMNetworkStatusApp extends PApplet {
 					text("PS: " + BOMDictionary.policyStatusToHR(md.policyStatus), 0, 15);
 					text("AF: " + BOMDictionary.activityFlagToHR(md.activityFlag), 0, 30);
 					text("Connections: " + md.numConnections, 0, 45);
-					
+
 					translate(w, 0);
 					fill(currentView.getColour(AbstractBUGView.P_POLICYSTATUS, md.policyStatus));
 					rect(-5, 15 + 7, 5, 5);
@@ -561,11 +570,11 @@ public class BOMNetworkStatusApp extends PApplet {
 					rect(-5, 30 + 7, 5, 5);
 					fill(currentView.getConnectionsColour(g, md.numConnections));
 					rect(-5, 45 + 7, 5, 5);
-					
+
 					textAlign(RIGHT, TOP);
 					fill(120);
 					text(ip, 0, 0);
-					
+
 				} else {
 					textAlign(LEFT, TOP);
 					if (details.selectedColumnMachineCount >= 0) {
@@ -663,6 +672,10 @@ public class BOMNetworkStatusApp extends PApplet {
 
 					flyingText.startFly("Sort facilities by " + sortText);
 					fc.sortSubmode = keyCode - 0x30;
+					
+					if (fc.sortMode == FacilityComparator.SM_CONNECTIONS)
+						--fc.sortSubmode;
+					
 					fc.sortMachineGroup = currentView.currentMachineGroup;
 					fc.sortComactTimestamp = currentView.selectedCompactTimestamp >= 0 ? currentView.selectedCompactTimestamp : currentView.currentCompactTimestamp;
 
@@ -727,6 +740,9 @@ public class BOMNetworkStatusApp extends PApplet {
 
 			if (keyCode >= '0' && keyCode <= '5')
 				value = keyCode - 0x30;
+				if (checkKey("c"))
+					--value;
+
 
 			if (checkKey("a")) {
 				parameter = AbstractBUGView.P_ACTIVITYFLAG;
@@ -775,8 +791,16 @@ public class BOMNetworkStatusApp extends PApplet {
 		}
 
 		// Choose machinegroup (all, atms, servers, workstations)
-		if (checkKey("m") && keyCode >= '0' && keyCode <= '3') {
-			currentView.currentMachineGroup = keyCode - 0x30;
+		if (checkKey("m") && (keyCode >= '0' && keyCode <= '9' || keyLess || keySpace)) {
+			if (keySpace)
+				currentView.currentMachineGroup = 0;
+			else if (keyCode == '0')
+				currentView.currentMachineGroup = 3 + 7;
+			else if (keyLess)
+				currentView.currentMachineGroup = 3 + 8;
+			else
+				currentView.currentMachineGroup = keyCode - 0x30;
+			
 			flyingText.startFly("Machine group: " + BOMDictionary.machineGroupToHR(currentView.currentMachineGroup));
 			gridGraphicBuffer.setUpdateFlag();
 			return;
@@ -800,9 +824,9 @@ public class BOMNetworkStatusApp extends PApplet {
 			flyingText.startFly("Sort machines within a facility by " + BOMDictionary.DetailsSortOrderToHR(mdc.sortMode));
 			detailsGraphicBuffer.setUpdateFlag();
 		}
-		
+
 		// Details - reset view
-		if (checkKey ("d") && keySpace) {
+		if (checkKey("d") && keySpace) {
 			if (details.currentFacility == null)
 				return;
 
@@ -979,7 +1003,7 @@ public class BOMNetworkStatusApp extends PApplet {
 			flyingText.startFly("To reset grid press G + SPACE. See help.");
 			return;
 		}
-}
+	}
 
 	public void keyReleased() {
 		if (loadStage < 42)
@@ -1027,116 +1051,6 @@ public class BOMNetworkStatusApp extends PApplet {
 					- (int) gridClipper.getClippingRect().getMinY());
 			currentView.selectionIsLocked = currentView.selectedFacility != null;
 		}
-	}
-
-	public HashMap<String, Businessunit> loadFaclityStatusData() {
-
-		HashMap<String, Businessunit> businessunits = new HashMap<String, Businessunit>();
-
-		try {
-
-			BufferedReader reader;
-			String line;
-
-			// Reading facilities info
-			reader = createReader("facility.tab");
-			reader.readLine(); // Skipping the first line with headers
-
-			while (true) {
-				line = reader.readLine();
-				if (line == null) {
-					break;
-				} else {
-					String[] tokens = split(line, TAB);
-					String currentBuName = tokens[0];
-					String currentBuRealName = null;
-					String currentFName = tokens[1];
-
-					// Hack for business unit name to have data centres in different cells. See Facility.businessunitRealName
-					if (currentBuName.equals("headquarters")) {
-						currentBuRealName = currentBuName;
-						currentBuName = currentFName;
-					}
-
-					Businessunit currentBu = businessunits.get(currentBuName);
-					if (currentBu == null) {
-						currentBu = new Businessunit(currentBuName);
-						businessunits.put(currentBuName, currentBu);
-					}
-
-					Facility currentF = new Facility();
-					currentBu.facilities.put(currentFName, currentF);
-					currentBu.sortedFacilities.add(currentF);
-					currentF.businessunitName = currentBuName;
-					currentF.businessunitRealName = currentBuRealName;
-					currentF.facilityName = currentFName;
-					currentF.lat = Float.valueOf(tokens[2]);
-					currentF.lon = Float.valueOf(tokens[3]);
-					currentF.timezoneOffset = Short.valueOf(tokens[4]);
-					currentF.machinegroups[0] = new MachineGroup(Integer.valueOf(tokens[5]));
-					currentF.machinegroups[1] = new MachineGroup(Integer.valueOf(tokens[6]));
-					currentF.machinegroups[2] = new MachineGroup(Integer.valueOf(tokens[7]));
-					currentF.machinegroups[3] = new MachineGroup(Integer.valueOf(tokens[8]));
-					for (int i = 0; i < 4; i++) {
-						currentF.machinegroups[i].ipMin = IPConverter.stringToInt(tokens[9 + 2 * i]);
-						currentF.machinegroups[i].ipMax = IPConverter.stringToInt(tokens[10 + 2 * i]);
-					}
-					currentBu.sortFacilities();
-				}
-			}
-			reader.close();
-
-			// Reading statuses for all facilities
-			reader = createReader("facilitystatus.tab");
-			// reader = createReader("facilitystatus_short.tab");
-			// Skipping the first line with headers
-			reader.readLine();
-
-			while (true) {
-				line = reader.readLine();
-				if (line == null) {
-					break;
-				} else {
-					String[] tokens = split(line, TAB);
-
-					String currentBuName = tokens[0];
-					String currentFName = tokens[1];
-					short compactTimestamp = CompactTimestamp.fullTimestampToCompact(tokens[2]);
-
-					// Hack for business unit name to have data centres in different cells. See Facility.businessunitRealName
-					if (currentBuName.equals("headquarters"))
-						currentBuName = currentFName;
-
-					if (businessunits.get(currentBuName) == null)
-						continue;
-					Facility currentF = businessunits.get(currentBuName).facilities.get(currentFName);
-
-					for (short machineGroupId = 0; machineGroupId < 4; machineGroupId++) {
-						MachineGroupStatus currentMGStatus = new MachineGroupStatus();
-
-						for (int i = 0; i < 6; i++)
-							currentMGStatus.countByActivityFlag[i] = Integer.parseInt(tokens[3 + 24 + machineGroupId * 6 + i]);
-						for (int i = 0; i < 6; i++)
-							currentMGStatus.countByPolicyStatus[i] = Integer.parseInt(tokens[3 + machineGroupId * 6 + i]);
-
-						currentMGStatus.connections[0] = Integer.parseInt(tokens[3 + 24 + 24 + machineGroupId]); // count
-						currentMGStatus.connections[1] = Float.parseFloat(tokens[3 + 24 + 24 + 4 + machineGroupId]); // avg
-						currentMGStatus.connections[2] = Float.parseFloat(tokens[3 + 24 + 24 + 16 + machineGroupId]); // sd
-						currentMGStatus.connections[3] = Integer.parseInt(tokens[3 + 24 + 24 + 12 + machineGroupId]); // min
-						currentMGStatus.connections[4] = Integer.parseInt(tokens[3 + 24 + 24 + 8 + machineGroupId]); // max
-
-						currentF.machinegroups[machineGroupId].statuses[compactTimestamp] = currentMGStatus;
-
-					}
-				}
-			}
-			reader.close();
-
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-
-		return businessunits;
 	}
 
 	// Class that implements ThreadedDraw for drawing in a different thread

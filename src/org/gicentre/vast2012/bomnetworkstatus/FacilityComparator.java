@@ -69,7 +69,7 @@ public class FacilityComparator implements Comparator<Facility> {
 			dp = Integer.signum(facility1.machinegroups[sortMachineGroup].statuses[sortComactTimestamp].countByPolicyStatus[sortSubmode] - facility2.machinegroups[sortMachineGroup].statuses[sortComactTimestamp].countByPolicyStatus[sortSubmode]);
 			break;
 		case SM_CONNECTIONS:
-			dp = Integer.signum((int)((facility1.machinegroups[sortMachineGroup].statuses[sortComactTimestamp].connections[sortSubmode] - facility2.machinegroups[sortMachineGroup].statuses[sortComactTimestamp].connections[sortSubmode])*16));
+			dp = Integer.signum((int)(facility1.machinegroups[sortMachineGroup].statuses[sortComactTimestamp].connections[sortSubmode] - facility2.machinegroups[sortMachineGroup].statuses[sortComactTimestamp].connections[sortSubmode]));
 			break;
 		}
 

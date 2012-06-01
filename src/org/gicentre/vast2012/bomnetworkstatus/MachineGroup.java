@@ -19,8 +19,7 @@ public class MachineGroup {
 	public int ipMin;
 	public int ipMax;
 
-	public MachineGroup(int machinecount) {
-		this.machinecount = machinecount;
+	public MachineGroup() {
 		statuses = new MachineGroupStatus[192];
 	}
 }
