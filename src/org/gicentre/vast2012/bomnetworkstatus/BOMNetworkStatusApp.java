@@ -8,9 +8,11 @@ import org.gicentre.utils.gui.Clipper;
 import org.gicentre.utils.gui.HelpScreen;
 import org.gicentre.utils.gui.ThreadedDraw;
 import org.gicentre.utils.gui.ThreadedGraphicBuffer;
+import org.gicentre.utils.gui.Tooltip;
 import org.gicentre.utils.move.ZoomPan;
 import org.gicentre.utils.move.ZoomPanState;
 import org.gicentre.utils.move.ZoomPan.ZoomPanBehaviour;
+import org.gicentre.utils.spatial.Direction;
 import org.gicentre.vast2012.bomnetworkstatus.ui.BusinessunitGrid;
 import org.gicentre.vast2012.bomnetworkstatus.ui.DetailsView;
 import org.gicentre.vast2012.bomnetworkstatus.ui.FlyingText;
@@ -29,8 +31,8 @@ public class BOMNetworkStatusApp extends PApplet {
 
 	private static final long serialVersionUID = 4320695214813440866L;
 
-	public static int DETAILS_CAPTIONS_HEIGHT = 90;
-	public static int DETAILS_Y = 345;
+	public static int DETAILS_CAPTIONS_HEIGHT = 0;
+	public static int DETAILS_Y = 435;
 
 	HashMap<String, Businessunit> businessunits;
 	BusinessunitGrid businessunitGrid;
@@ -44,10 +46,11 @@ public class BOMNetworkStatusApp extends PApplet {
 	ThreadedGraphicBuffer detailsGraphicBuffer;
 	MachineGroupDetailsCache detailsCache;
 	int framesToUpdateDetailsGraphicBuffer = -1;
+	Tooltip machineDetailsTT;
 
 	FlyingText flyingText;
 	HelpScreen helpScreen;
-	final int HS_HEIGHT = 600;
+	final static int HS_HEIGHT = 600;
 
 	TimeBUGView timeView;
 	SnapshotBUGView snapshotView;
@@ -100,23 +103,22 @@ public class BOMNetworkStatusApp extends PApplet {
 			helpScreen.putEntry("A", "Show activity flag in the grid. Press together with 0-5 in temporal mode to display counts for a particular activity flag value.");
 			helpScreen.putEntry("C",
 					"Show connections in the grid (snapshot view and temporal view only). Press together with 1-4 in temporal mode to display: 1 - avg, 2 - sd, 3 - min, 4 - max.");
-			helpScreen.putEntry("M + SPACE, 1-9, 0, -", "Choose between statistics for:\n" +
-					"        SPACE - all machines,\n" +
-					"        1 - ATMs, 2 - servers, 3 - workstations,\n" +
-					"        4 - servers / compute, 5 - servers / email, 6 - servers / file servers, 7 - servers / multiple, 8 - servers / web,\n" +
-					"        9 - workstations / loan, 0 - workstations / office, - - workstations / teller");
+			helpScreen.putEntry("M + SPACE, 1-9, 0, -", "Choose between statistics for:\n" + "        SPACE - all machines,\n"
+					+ "        1 - ATMs, 2 - servers, 3 - workstations,\n"
+					+ "        4 - servers / compute, 5 - servers / email, 6 - servers / file servers, 7 - servers / multiple, 8 - servers / web,\n"
+					+ "        9 - workstations / loan, 0 - workstations / office, - - workstations / teller");
 			helpScreen.addSpacer();
 			helpScreen.putEntry("G + 1-3", "Sort business units in the grid by: 1 - name, 2 - geographically, 3 - geographically with data centres in the bottom");
 			helpScreen.putEntry("D + 1-4", "Sort machines within a facility in columns by: 1 - ip address, 2 - activity flag, 3 - policy status, 4 - number of connections");
 			helpScreen
-					.putEntry("S + 1-6",
+					.putEntry("F + 1-6",
 							"Sort facilities within the business units by: 1 - name, 2 - time zone (W↘E), 3 - latitude (N↘S), 4 - longitude (W↘E), 5, 6 - lowest and highest ip address there");
-			helpScreen.putEntry("S + A + 0-5", "Sort facilities within the business units by counts of machines having activity flag equal to pressed digit at selected time");
-			helpScreen.putEntry("S + P + 0-5", "Sort facilities within the business units by counts of machines having policy status equal to pressed digit at selected time");
+			helpScreen.putEntry("F + A + 0-5", "Sort facilities within the business units by counts of machines having activity flag equal to pressed digit at selected time");
+			helpScreen.putEntry("F + P + 0-5", "Sort facilities within the business units by counts of machines having policy status equal to pressed digit at selected time");
 			helpScreen
-					.putEntry("S + C + 1-4",
+					.putEntry("F + C + 1-4",
 							"Sort facilities within the business units by: 1 - average connections, 2 - standard deviation of connections, 3 - minimum connections, 4 - maximum connections");
-			helpScreen.putEntry("S + SPACE", "Include / exclude headquarters when sorting");
+			helpScreen.putEntry("F + SPACE", "Include / exclude headquarters when sorting");
 			helpScreen.addSpacer();
 			helpScreen.putEntry("Mouse actions",
 					"Roll over a facility to see its detailed statistics at a particular time. Click to select a facility permanently. Scroll and drag to pan and zoom the grid.");
@@ -131,17 +133,17 @@ public class BOMNetworkStatusApp extends PApplet {
 			// Starting loading the data
 			dataLoader = new DataLoader();
 			return;
-			
-		case 2:			
+
+		case 2:
 			helpScreen.draw();
-			
+
 			if (dataLoader.ready == true) {
 				businessunits = dataLoader.businessunits;
 				dataLoader.interrupt();
 				dataLoader = null;
 				return;
 			}
-			
+
 			fill(0, 95);
 			textAlign(CENTER, CENTER);
 			text("Loading facility status data...", width / 2, height / 2 + HS_HEIGHT / 2);
@@ -187,8 +189,8 @@ public class BOMNetworkStatusApp extends PApplet {
 			gridGraphicBuffer.setUseFadeEffect(true, 20);
 
 			details = new DetailsView();
-			detailsClipper = new Clipper(this, new Rectangle((int) gridClipper.getClippingRect().getMaxX() + 30, DETAILS_Y, width - 60
-					- (int) gridClipper.getClippingRect().getMaxX(), height - DETAILS_Y - 80));
+			detailsClipper = new Clipper(this, new Rectangle((int) gridClipper.getClippingRect().getMaxX() + 30, DETAILS_Y, width - 
+					- (int) gridClipper.getClippingRect().getMaxX(), (int) gridClipper.getClippingRect().getMaxY() - DETAILS_Y));
 			detailsZoomPan = new ZoomPan(this);
 			detailsZoomPan.setMinZoomScale(0.0025);
 			detailsZoomPan.setMaxZoomScale(5);
@@ -317,7 +319,7 @@ public class BOMNetworkStatusApp extends PApplet {
 	}
 
 	protected void drawSelectedFacilityInfo() {
-
+		String tooltipText = null;
 		if (currentView == overallView)
 			return;
 
@@ -356,11 +358,11 @@ public class BOMNetworkStatusApp extends PApplet {
 		if (textWidth(sCount2) <= detailsClipper.getClippingRect().getWidth())
 			sCount = sCount2;
 		text(sCount, 0, 75);
-		
+
 		// IP range
 		String ipr = IPConverter.intToStr(mg.ipMin) + " − " + IPConverter.intToStr(mg.ipMax);
 		if (ipr.length() > 3)
-			text("IP range: " + ipr , 0, 90);
+			text("IP range: " + ipr, 0, 90);
 
 		// Time
 		String tsHRAbs = CompactTimestamp.toHRString(currentView.selectedCompactTimestamp);
@@ -379,6 +381,7 @@ public class BOMNetworkStatusApp extends PApplet {
 
 		if (mgs == null) {
 			text("No data available", 0, 0);
+			popMatrix();
 		} else {
 
 			// PolicyStatus
@@ -401,7 +404,7 @@ public class BOMNetworkStatusApp extends PApplet {
 				text(String.valueOf(i), 0, 15 * i);
 				// machine count
 				textAlign(RIGHT);
-				text((int)mgs.countByPolicyStatus[i], 60, 15 * i);
+				text((int) mgs.countByPolicyStatus[i], 60, 15 * i);
 				// %
 				if (mg.machinecount > 0) {
 					fill(0, 60);
@@ -438,7 +441,7 @@ public class BOMNetworkStatusApp extends PApplet {
 				text(String.valueOf(i), 0, 15 * i);
 				// machine count
 				textAlign(RIGHT);
-				text((int)mgs.countByActivityFlag[i], 60, 15 * i);
+				text((int) mgs.countByActivityFlag[i], 60, 15 * i);
 
 				// %
 				if (mg.machinecount > 0) {
@@ -491,7 +494,7 @@ public class BOMNetworkStatusApp extends PApplet {
 				if (details.currentFacility == null)
 					detailsGraphicBuffer.setUpdateFlag();
 				else
-					framesToUpdateDetailsGraphicBuffer = 2;
+					framesToUpdateDetailsGraphicBuffer = 4;
 			} else if (!currentView.selectionIsLocked && details.currentFacility != null) {
 				details.currentFacility = null;
 				detailsZoomPan.reset();
@@ -555,45 +558,43 @@ public class BOMNetworkStatusApp extends PApplet {
 
 				// Selected machine details
 				MachineDetails md = details.selectedMachineDetails;
-				translate(0, 5);
-				fill(120);
 				if (md != null) {
-					textAlign(LEFT, TOP);
-					String str = BOMDictionary.machineClassToHR(md.machineClass) + (md.machineFunction != 0 ? " / " + BOMDictionary.machineFunctionToHR(md.machineFunction) : "")
-							+ ", " + details.selectedColumnMachineSeq;
-					String str2 = str + "/" + details.selectedColumnMachineCount;
-					String ip = IPConverter.intToStr(md.ipaddr);
-					// Making sure that ip address and n/total do not overlap
-					if (textWidth(str2) + textWidth(ip) + 3 < w)
-						str = str2;
-					text(str, 0, 0);
-					text("PS: " + BOMDictionary.policyStatusToHR(md.policyStatus), 0, 15);
-					text("AF: " + BOMDictionary.activityFlagToHR(md.activityFlag), 0, 30);
-					text("Connections: " + md.numConnections, 0, 45);
-
-					translate(w, 0);
-					fill(currentView.getColour(AbstractBUGView.P_POLICYSTATUS, md.policyStatus));
-					rect(-5, 15 + 7, 5, 5);
-					fill(currentView.getColour(AbstractBUGView.P_ACTIVITYFLAG, md.activityFlag));
-					rect(-5, 30 + 7, 5, 5);
-					fill(currentView.getConnectionsColour(g, md.numConnections));
-					rect(-5, 45 + 7, 5, 5);
-
-					textAlign(RIGHT, TOP);
-					fill(120);
-					text(ip, 0, 0);
+					tooltipText = IPConverter.intToStr(md.ipaddr);
+					tooltipText += "\n" + details.selectedColumnMachineSeq + " / " + details.selectedColumnMachineCount;
+					tooltipText += "\n" + "PS: " + BOMDictionary.policyStatusToHR(md.policyStatus, true);
+					tooltipText += "\n" + "AF: " + BOMDictionary.activityFlagToHR(md.activityFlag);
+					tooltipText += "\n" + "Connections: " + md.numConnections;
 
 				} else {
-					textAlign(LEFT, TOP);
-					if (details.selectedColumnMachineCount >= 0) {
-						text("Machines in column: " + details.selectedColumnMachineCount, 0, 30);
+					if (details.selectedColumnMachineCount >= 0 && mouseY > detailsClipper.getClippingRect().getMinY() + DetailsView.MARGIN_TOP) {
+						tooltipText = "Machines in column: " + details.selectedColumnMachineCount;
 					}
-					text("Sort order: " + BOMDictionary.DetailsSortOrderToHR(MachineDetailsComparator.getInstance().sortMode), 0, 45);
 				}
 				popMatrix();
+
+				if (MachineDetailsComparator.getInstance().sortMode != MachineDetailsComparator.SM_IP) {
+					pushMatrix();
+					translate(0, (float) gridClipper.getClippingRect().getMaxY() + 15);
+					fill(120);
+					textAlign(LEFT, TOP);
+					textFont(bottomRowFont);
+					text("Machines are sorted by " + BOMDictionary.DetailsSortOrderToHR(MachineDetailsComparator.getInstance().sortMode) + ".", 0, 0);
+					popMatrix();
+				}
 			}
 		}
 		popMatrix(); // Right shift - end
+
+		// Tooltip
+		if (tooltipText != null && detailsClipper.getClippingRect().contains(mouseX, mouseY)) {
+			textFont(bottomRowFont);
+			machineDetailsTT = new Tooltip(this, bottomRowFont, 12, textWidth(tooltipText) + 8);
+			machineDetailsTT.setAnchor(Direction.NORTH_WEST);
+
+			machineDetailsTT.setText(tooltipText);
+			machineDetailsTT.draw(Math.min(mouseX + 16, width - machineDetailsTT.getWidth() - 3), Math.min(mouseY + 20, height - machineDetailsTT.getHeight() - 3));
+			machineDetailsTT = null;
+		}
 	}
 
 	/* multi-key-press support */
@@ -652,7 +653,7 @@ public class BOMNetworkStatusApp extends PApplet {
 		}
 
 		// Facility sort order: 1 - name, 2 - timezone and name, 3 - lat, 4 - lon ' ' or a parameter
-		if (checkKey("s") && currentView != overallView) {
+		if (checkKey("f") && currentView != overallView) {
 
 			FacilityComparator fc = FacilityComparator.getInstance();
 
@@ -680,10 +681,10 @@ public class BOMNetworkStatusApp extends PApplet {
 
 					flyingText.startFly("Sort facilities by " + sortText);
 					fc.sortSubmode = keyCode - 0x30;
-					
+
 					if (fc.sortMode == FacilityComparator.SM_CONNECTIONS)
 						--fc.sortSubmode;
-					
+
 					fc.sortMachineGroup = currentView.currentMachineGroup;
 					fc.sortComactTimestamp = currentView.selectedCompactTimestamp >= 0 ? currentView.selectedCompactTimestamp : currentView.currentCompactTimestamp;
 
@@ -720,9 +721,9 @@ public class BOMNetworkStatusApp extends PApplet {
 					fc.sortHeadquarters = !fc.sortHeadquarters;
 
 					if (fc.sortHeadquarters)
-						flyingText.startFly("Include headquarters when sorting");
+						flyingText.startFly("Include headquarters when sorting facilities");
 					else
-						flyingText.startFly("Exclude headquarters when sorting");
+						flyingText.startFly("Exclude headquarters when sorting facilities");
 					businessunitGrid.sortFacilities();
 				}
 			}
@@ -748,9 +749,8 @@ public class BOMNetworkStatusApp extends PApplet {
 
 			if (keyCode >= '0' && keyCode <= '5')
 				value = keyCode - 0x30;
-				if (checkKey("c"))
-					--value;
-
+			if (checkKey("c"))
+				--value;
 
 			if (checkKey("a")) {
 				parameter = AbstractBUGView.P_ACTIVITYFLAG;
@@ -808,7 +808,7 @@ public class BOMNetworkStatusApp extends PApplet {
 				currentView.currentMachineGroup = 3 + 8;
 			else
 				currentView.currentMachineGroup = keyCode - 0x30;
-			
+
 			flyingText.startFly("Machine group: " + BOMDictionary.machineGroupToHR(currentView.currentMachineGroup));
 			gridGraphicBuffer.setUpdateFlag();
 			return;
@@ -1009,6 +1009,10 @@ public class BOMNetworkStatusApp extends PApplet {
 		// Back compatibility
 		if (key == 'r') {
 			flyingText.startFly("To reset grid press G + SPACE. See help.");
+			return;
+		}
+		if (key == 's') {
+			flyingText.startFly("To sort facilities press F + sort mode button. See help.");
 			return;
 		}
 	}

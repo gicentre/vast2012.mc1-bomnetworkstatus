@@ -15,7 +15,7 @@ public class DetailsView {
 
 	private static final int UNIT_SIZE = 5;
 	private static final int COL_WIDTH = 28;
-	private static final int MARGIN_TOP = BOMNetworkStatusApp.DETAILS_CAPTIONS_HEIGHT + 6;
+	public static final int MARGIN_TOP = BOMNetworkStatusApp.DETAILS_CAPTIONS_HEIGHT + 6;
 
 	public Facility currentFacility;
 	public short currentCompactTimestamp;

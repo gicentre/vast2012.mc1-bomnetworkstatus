@@ -150,6 +150,10 @@ public class BOMDictionary {
 	}
 
 	public static String policyStatusToHR(int policyStatus) {
+		return policyStatusToHR(policyStatus, true);
+	}
+
+		public static String policyStatusToHR(int policyStatus, boolean isShort) {
 		String result = String.valueOf(policyStatus);
 		switch (policyStatus) {
 		case 0:
@@ -159,16 +163,16 @@ public class BOMDictionary {
 			result += " (healthy)";
 			break;
 		case 2:
-			result += " (moderate policy deviation)";
+			result += isShort ? " (moderate p. d.)" : " (moderate policy deviation)";
 			break;
 		case 3:
-			result += " (serious policy deviations)";
+			result += isShort ? " (serious p. d.)" : " (serious policy deviations)";
 			break;
 		case 4:
-			result += " (critical policy deviations)";
+			result += isShort ? " (critical p. d.)" : " (critical policy deviations)";
 			break;
 		case 5:
-			result += " (possible virus infection)";
+			result += isShort ? " (possible virus)" : " (possible virus infection)";
 			break;
 		}
 		return result;
