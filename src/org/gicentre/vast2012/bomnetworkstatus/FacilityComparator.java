@@ -63,13 +63,15 @@ public class FacilityComparator implements Comparator<Facility> {
 			dp = Integer.signum(facility1.machinegroups[0].ipMax - facility2.machinegroups[0].ipMax);
 			break;
 		case SM_ACTIVITY_FLAG:
-			dp = Integer.signum(facility1.machinegroups[sortMachineGroup].statuses[sortComactTimestamp].countByActivityFlag[sortSubmode] - facility2.machinegroups[sortMachineGroup].statuses[sortComactTimestamp].countByActivityFlag[sortSubmode]);
+			dp = (int) Math.signum((double)facility1.machinegroups[sortMachineGroup].statuses[sortComactTimestamp].countByActivityFlag[sortSubmode] / facility1.machinegroups[sortMachineGroup].machinecount
+					      		 - (double)facility2.machinegroups[sortMachineGroup].statuses[sortComactTimestamp].countByActivityFlag[sortSubmode] / facility2.machinegroups[sortMachineGroup].machinecount);
 			break;
 		case SM_POLICY_STATUS:
-			dp = Integer.signum(facility1.machinegroups[sortMachineGroup].statuses[sortComactTimestamp].countByPolicyStatus[sortSubmode] - facility2.machinegroups[sortMachineGroup].statuses[sortComactTimestamp].countByPolicyStatus[sortSubmode]);
+			dp = (int) Math.signum((double)facility1.machinegroups[sortMachineGroup].statuses[sortComactTimestamp].countByPolicyStatus[sortSubmode] / facility1.machinegroups[sortMachineGroup].machinecount
+							 	 - (double)facility2.machinegroups[sortMachineGroup].statuses[sortComactTimestamp].countByPolicyStatus[sortSubmode] / facility2.machinegroups[sortMachineGroup].machinecount);
 			break;
 		case SM_CONNECTIONS:
-			dp = Integer.signum((int)(facility1.machinegroups[sortMachineGroup].statuses[sortComactTimestamp].connections[sortSubmode] - facility2.machinegroups[sortMachineGroup].statuses[sortComactTimestamp].connections[sortSubmode]));
+			dp = Integer.signum(facility1.machinegroups[sortMachineGroup].statuses[sortComactTimestamp].connections[sortSubmode] - facility2.machinegroups[sortMachineGroup].statuses[sortComactTimestamp].connections[sortSubmode]);
 			break;
 		}
 

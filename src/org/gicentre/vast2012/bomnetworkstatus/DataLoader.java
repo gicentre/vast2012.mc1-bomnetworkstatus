@@ -1,9 +1,9 @@
 package org.gicentre.vast2012.bomnetworkstatus;
 
 import java.io.BufferedReader;
-import java.io.FileInputStream;
-import java.io.InputStreamReader;
 import java.util.HashMap;
+
+import processing.core.PApplet;
 
 public class DataLoader extends Thread {
 	
@@ -22,12 +22,14 @@ public class DataLoader extends Thread {
 		businessunits = new HashMap<String, Businessunit>();
 
 		try {
+			
+			PApplet helperApplet = new PApplet();
 
 			BufferedReader reader;
 			String line;
 
 			// Reading facilities info
-			reader = new BufferedReader(new InputStreamReader(new FileInputStream("data/facility.tab")));
+			reader = helperApplet.createReader("facility.tab");
 			reader.readLine(); // Skipping the first line with headers
 
 			int l = 0;
@@ -81,7 +83,7 @@ public class DataLoader extends Thread {
 			reader.close();
 
 			// Reading statuses for all facilities
-			reader = new BufferedReader(new InputStreamReader(new FileInputStream("data/facilitystatus.tab")));
+			reader = helperApplet.createReader("facilitystatus.tab");
 			reader.readLine(); // Skipping the first line with headers
 
 			char currentValue;

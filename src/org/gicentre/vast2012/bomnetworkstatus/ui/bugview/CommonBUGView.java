@@ -119,7 +119,7 @@ public abstract class CommonBUGView extends AbstractBUGView {
 
 		canvas.fill(0);
 		canvas.noStroke();
-		for (int i = 1; i < 4; i++) {
+		for (int i = 1; i < 5; i++) {
 			switch (wing) {
 			case PApplet.LEFT:
 				canvas.rect(i, 0, 1, i);
@@ -215,15 +215,15 @@ public abstract class CommonBUGView extends AbstractBUGView {
 	}
 
 	public int getConnectionsColour(PGraphics canvas, int numConnections) {
-		float cRangeMin = 0;
-		float cRangeMax = 120;
+		double cRangeMin = 0;
+		double cRangeMax = 120;
 		
 		if (currentParameter == P_CONNECTIONS) {
 			cRangeMin = rangeMin;
 			cRangeMax = rangeMax;
 		}
 		
-		return  canvas.lerpColor(0xffffffff, getColour(AbstractBUGView.P_CONNECTIONS, 0, false),  Math.min(1, Math.max(0, (numConnections) - cRangeMin) / (cRangeMax - cRangeMin)));
+		return  canvas.lerpColor(0xffffffff, getColour(AbstractBUGView.P_CONNECTIONS, 0, false),  (float)Math.min(1, Math.max(0, (numConnections) - cRangeMin) / (cRangeMax - cRangeMin)));
 	}
 
 	public boolean selectNeighbourFacility(int diff) {
@@ -267,8 +267,8 @@ public abstract class CommonBUGView extends AbstractBUGView {
 			t1 = String.valueOf((int) rangeMin);
 			t2 = String.valueOf((int) rangeMax);
 		} else {
-			t1 = String.valueOf((int) (rangeMin * 100)) + "%";
-			t2 = String.valueOf((int) (rangeMax * 100)) + "%";
+			t1 = String.valueOf((int) Math.round(rangeMin * 100)) + "%";
+			t2 = String.valueOf((int) Math.round(rangeMax * 100)) + "%";
 		}
 
 		canvas.fill(120);

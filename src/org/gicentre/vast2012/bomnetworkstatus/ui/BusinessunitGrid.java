@@ -16,7 +16,7 @@ public class BusinessunitGrid {
 	public static final int LAYOUT_GEO = 2;
 	public static final int LAYOUT_GEO_EXCL_DC = 3;
 
-	public static final int PADDING = 3;
+	public static final int PADDING = 4;
 	public static final int CELLPADDING_H = 4;
 	public static final int CELLPADDING_V = 4;
 

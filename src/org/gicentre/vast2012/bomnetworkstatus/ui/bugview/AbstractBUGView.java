@@ -16,10 +16,10 @@ public abstract class AbstractBUGView {
 	public static final int V_CONN_SD = 4;
 	
 	public boolean rangeIsLocked = false;
-	public float rangeMin = 0;
-	public float rangeMax = 1;
-	public float rangeMinLimit = 0;
-	public float rangeMaxLimit = 1;
+	public double rangeMin = 0;
+	public double rangeMax = 1;
+	public double rangeMinLimit = 0;
+	public double rangeMaxLimit = 1;
 	
 	public boolean rangeIsAbsolute = false;
 	

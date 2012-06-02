@@ -43,7 +43,7 @@ public class MachineGroupDetailsCache extends Thread {
 		try {
 			conn = DriverManager.getConnection(dbURL, dbUser, dbPassword);
 		} catch (SQLException e) {
-			e.printStackTrace();
+			System.err.println(e.getMessage());
 			conn = null;
 		}
 
@@ -86,7 +86,7 @@ public class MachineGroupDetailsCache extends Thread {
 	public void processLoadQueue() {
 		try {
 		for (MachineGroupDetails mgd : cache.values()) {
-			if (!mgd.loadingIsFinished) {
+			if (!mgd.loadingIsFinished && conn != null) {
 				try {
 					int initialMGDSize = mgd.details.size();
 					String stmtStr = "SELECT ipaddr, policystatus, activityflag, numconnections, machineclass, machinefunction "

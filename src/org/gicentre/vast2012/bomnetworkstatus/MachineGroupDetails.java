@@ -2,6 +2,7 @@ package org.gicentre.vast2012.bomnetworkstatus;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.ConcurrentModificationException;
 
 
 public class MachineGroupDetails {
@@ -62,7 +63,14 @@ public class MachineGroupDetails {
 		int sm = MachineDetailsComparator.getInstance().sortMode;
 		int ds = details.size();
 		if (sizeWhenLastSorted != ds || sortModeWhenLastSorted != MachineDetailsComparator.getInstance().sortMode) {
-			Collections.sort(details, MachineDetailsComparator.getInstance());
+			while (true) {
+				try {
+					Collections.sort(details, MachineDetailsComparator.getInstance());
+					break;
+				} catch (ConcurrentModificationException e) {
+					System.err.println("Warning. Exception occured when sorting machine details: " + e.getMessage());
+				}
+			}
 			sizeWhenLastSorted = ds;
 			sortModeWhenLastSorted = sm;
 		}

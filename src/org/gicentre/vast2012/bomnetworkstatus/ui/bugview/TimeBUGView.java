@@ -81,7 +81,7 @@ public class TimeBUGView extends CommonBUGView {
 					canvas.fill(FILL_NODATA);
 				// Data presents and the base is determined
 				else
-					canvas.fill(canvas.lerpColor(colourMin, colourMax, Math.min(1, Math.max(0, ((value / valueBase) - rangeMin) / (rangeMax - rangeMin)))));
+					canvas.fill(canvas.lerpColor(colourMin, colourMax, (float)Math.min(1, Math.max(0, ((value / valueBase) - rangeMin) / (rangeMax - rangeMin)))));
 				// canvas.point(offsetX + t, offsetY + row);
 				canvas.rect(offsetX + t, offsetY + currentY, tsWidth, currentFacilityHeight);
 

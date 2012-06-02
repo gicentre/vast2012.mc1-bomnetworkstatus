@@ -26,6 +26,7 @@ public class DetailsView {
 	public MachineDetails selectedMachineDetails;
 	public int selectedColumnMachineCount;
 	public int selectedColumnMachineSeq;
+	public int selectedColumn;
 
 	PFont mainFont = new PFont(new Font("Arial", 0, 14), true);
 	
@@ -106,6 +107,7 @@ public class DetailsView {
 		selectedMachineDetails = null;
 		selectedColumnMachineCount = -1;
 		selectedColumnMachineSeq = -1;
+		selectedColumn = -1;
 
 		if (x < 0)
 			return;
@@ -117,6 +119,7 @@ public class DetailsView {
 			for (int i = 0; i < 9; i++) {
 				if (x <= 3 * UNIT_SIZE) {
 					selectedColumnMachineCount = currentMachineGroupDetails.firstElements[i+1] - currentMachineGroupDetails.firstElements[i];
+					selectedColumn = i;
 					if (y < 0)
 						return;
 					int candidateMachineSeq = 0;
@@ -147,5 +150,6 @@ public class DetailsView {
 		selectedMachineDetails = null;
 		selectedColumnMachineCount = -1;
 		selectedColumnMachineSeq = -1;
+		selectedColumn = -1;
 	}
 }

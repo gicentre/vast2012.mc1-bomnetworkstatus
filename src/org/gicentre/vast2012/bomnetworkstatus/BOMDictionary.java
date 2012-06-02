@@ -150,7 +150,7 @@ public class BOMDictionary {
 	}
 
 	public static String policyStatusToHR(int policyStatus) {
-		return policyStatusToHR(policyStatus, true);
+		return policyStatusToHR(policyStatus, false);
 	}
 
 		public static String policyStatusToHR(int policyStatus, boolean isShort) {
