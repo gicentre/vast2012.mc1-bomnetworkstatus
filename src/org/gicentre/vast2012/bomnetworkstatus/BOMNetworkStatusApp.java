@@ -815,6 +815,11 @@ public class BOMNetworkStatusApp extends PApplet {
 			int parameter = -1;
 			int value = -1;
 
+			if (keyCode >= '0' && keyCode <= '5')
+				value = keyCode - 0x30;
+			if (checkKey("c"))
+				--value;
+
 			// extracting parameter
 			if (checkKey("a")) {
 				parameter = AbstractBUGView.P_ACTIVITYFLAG;
@@ -831,11 +836,6 @@ public class BOMNetworkStatusApp extends PApplet {
 			}
 			
 			// extracting value
-			if (keyCode >= '0' && keyCode <= '5')
-				value = keyCode - 0x30;
-			if (checkKey("c"))
-				--value;
-
 			if (parameter == -1)
 				return;
 
@@ -1176,7 +1176,7 @@ public class BOMNetworkStatusApp extends PApplet {
 			currentView.selectionIsLocked = currentView.selectedFacility != null;
 		}
 		
-		if (detailsClipper.getClippingRect().contains(mouseX, mouseY)) {
+		if (detailsClipper.getClippingRect().contains(mouseX, mouseY) && currentView.selectedFacility != null) {
 			if (details.selectedColumn != -1) {
 				int mg = details.selectedColumn + 3;
 				if (mg == 3)

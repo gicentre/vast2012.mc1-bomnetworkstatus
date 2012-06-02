@@ -382,7 +382,7 @@ public abstract class CommonBUGView extends AbstractBUGView {
 			rangeMin = 0;
 			rangeMax = 120;
 			rangeMinLimit = 0;
-			rangeMaxLimit = 200;
+			rangeMaxLimit = 120;
 			rangeIsAbsolute = true;
 			break;
 		}
