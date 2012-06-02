@@ -125,56 +125,68 @@ public class BOMDictionary {
 	}
 
 	public static String activityFlagToHR(int activityFlag) {
-		String result = String.valueOf(activityFlag);
+		return activityFlagToHR(activityFlag, true, false);
+	}
+
+	public static String activityFlagToHR(int activityFlag, boolean includeNumber, boolean isShort) {
+		String result = includeNumber ? String.valueOf(activityFlag) + " (": "";
 		switch (activityFlag) {
 		case 0:
-			result += " (n/a)";
+			result += "n/a";
 			break;
 		case 1:
-			result += " (normal)";
+			result += "normal";
 			break;
 		case 2:
-			result += " (maintenance)";
+			result += "maintenance";
 			break;
 		case 3:
-			result += " (>5 inv. logins)";
+			result += ">5 inv. logins";
 			break;
 		case 4:
-			result += " (CPU 100%)";
+			result += "CPU 100%";
 			break;
 		case 5:
-			result += " (device added)";
+			result += "device added";
 			break;
 		}
+		
+		if (includeNumber)
+			result += ")";
+		
 		return result;
 	}
 
 	public static String policyStatusToHR(int policyStatus) {
-		return policyStatusToHR(policyStatus, false);
+		return policyStatusToHR(policyStatus, true, false);
 	}
 
-		public static String policyStatusToHR(int policyStatus, boolean isShort) {
-		String result = String.valueOf(policyStatus);
+	public static String policyStatusToHR(int policyStatus, boolean includeNumber, boolean isShort) {
+		String result = includeNumber ? String.valueOf(policyStatus) + " (": "";
 		switch (policyStatus) {
 		case 0:
-			result += " (n/a)";
+			result += "n/a";
 			break;
 		case 1:
-			result += " (healthy)";
+			result += "healthy";
 			break;
 		case 2:
-			result += isShort ? " (moderate p. d.)" : " (moderate policy deviation)";
+			result += isShort ? "moderate p. d." : "moderate policy deviation";
 			break;
 		case 3:
-			result += isShort ? " (serious p. d.)" : " (serious policy deviations)";
+			result += isShort ? "serious p. d." : "serious policy deviations";
 			break;
 		case 4:
-			result += isShort ? " (critical p. d.)" : " (critical policy deviations)";
+			result += isShort ? "critical p. d." : "critical policy deviations";
 			break;
 		case 5:
-			result += isShort ? " (possible virus)" : " (possible virus infection)";
+			result += isShort ? "possible virus" : "possible virus infection";
 			break;
 		}
+
+		if (includeNumber)
+			result += ")";
+
 		return result;
 	}
 

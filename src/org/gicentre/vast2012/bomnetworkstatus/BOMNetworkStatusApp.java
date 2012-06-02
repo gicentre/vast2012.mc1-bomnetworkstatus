@@ -46,7 +46,6 @@ public class BOMNetworkStatusApp extends PApplet {
 	ThreadedGraphicBuffer detailsGraphicBuffer;
 	MachineGroupDetailsCache detailsCache;
 	int framesToUpdateDetailsGraphicBuffer = -1;
-	Tooltip machineDetailsTT;
 
 	FlyingText flyingText;
 	HelpScreen helpScreen;
@@ -80,6 +79,12 @@ public class BOMNetworkStatusApp extends PApplet {
 
 	int loadStage = 0;
 	boolean oldFocused;
+
+	private String tooltipText;
+
+	private int parameterUnderMouse;
+
+	private int parameterValueUnderMouse;
 
 	@SuppressWarnings("deprecation")
 	public void draw() {
@@ -224,6 +229,9 @@ public class BOMNetworkStatusApp extends PApplet {
 		}
 
 		loadStage = 42;
+		tooltipText = null;
+		parameterUnderMouse = 0;
+		parameterValueUnderMouse = 0;
 		background(255);
 
 		noStroke();
@@ -246,6 +254,17 @@ public class BOMNetworkStatusApp extends PApplet {
 		drawBottomRow();
 		drawSelectedFacilityInfo();
 		flyingText.draw();
+
+		// Tooltip
+		if (tooltipText != null) {
+			textFont(bottomRowFont);
+			Tooltip machineDetailsTT = new Tooltip(this, bottomRowFont, 12, textWidth(tooltipText) + 8);
+			machineDetailsTT.setAnchor(Direction.NORTH_WEST);
+
+			machineDetailsTT.setText(tooltipText);
+			machineDetailsTT.draw(Math.min(mouseX + 16, width - machineDetailsTT.getWidth() - 3), Math.min(mouseY + 20, height - machineDetailsTT.getHeight() - 3));
+			machineDetailsTT = null;
+		}
 
 		stroke(0);
 
@@ -331,7 +350,6 @@ public class BOMNetworkStatusApp extends PApplet {
 	}
 
 	protected void drawSelectedFacilityInfo() {
-		String tooltipText = null;
 		if (currentView == overallView)
 			return;
 
@@ -402,12 +420,20 @@ public class BOMNetworkStatusApp extends PApplet {
 			text("Policy Status", 0, 0);
 			textFont(selectedInfoFont);
 			translate(0, 16);
+			
+			// Mouse coordinate in local coordinates
+			PMatrix m = getMatrix();
+			m.invert();
+			PVector localMouse = m.mult(new PVector(mouseX, mouseY), null);
+
+			int b = 0;
 			for (int i = 0; i < 6; i++) {
 				// square
-				if ((currentView.selectionIsLocked && mgs.countByPolicyStatus[i] > 0)
+				if ((currentView.selectionIsLocked && !detailsCache.isNotWorking() && mgs.countByPolicyStatus[i] > 0)
 						|| (currentView.currentParameter == AbstractBUGView.P_POLICYSTATUS && (currentView == snapshotView || i == currentView.currentValue))) {
 					fill(currentView.getColour(AbstractBUGView.P_POLICYSTATUS, i));
-					rect(11, -8 + 15 * i, 5, 5);
+					b = (currentView.currentParameter == AbstractBUGView.P_POLICYSTATUS && (currentView == snapshotView || i == currentView.currentValue)) ? 0 : 1;
+					rect(11 + b, -8 + 15 * i + b, 5 - 2 * b, 5 - 2 * b);
 				}
 
 				fill(0, 120);
@@ -426,13 +452,19 @@ public class BOMNetworkStatusApp extends PApplet {
 						text("%", 90, 15 * i);
 					}
 				}
-
+				// tooltip
+				if (localMouse.x > 3 && localMouse.y > -12  + 15*i && localMouse.x < 90 && localMouse.y < 15*i + 4) {
+					tooltipText = BOMDictionary.policyStatusToHR(i, false, false);
+					parameterUnderMouse = AbstractBUGView.P_POLICYSTATUS;
+					parameterValueUnderMouse = i;
+				}
 			}
 			popMatrix();
 
 			// Activity flag
 			pushMatrix();
 			translate(145, 0);
+			localMouse.x -= 145;
 			fill(120);
 			noStroke();
 			textAlign(LEFT);
@@ -441,12 +473,12 @@ public class BOMNetworkStatusApp extends PApplet {
 			translate(0, 16);
 			for (int i = 0; i < 6; i++) {
 				// square
-				if ((currentView.selectionIsLocked && mgs.countByActivityFlag[i] > 0)
+				if ((currentView.selectionIsLocked && !detailsCache.isNotWorking() && mgs.countByActivityFlag[i] > 0)
 						|| (currentView.currentParameter == AbstractBUGView.P_ACTIVITYFLAG && (currentView == snapshotView || i == currentView.currentValue))) {
 					fill(currentView.getColour(AbstractBUGView.P_ACTIVITYFLAG, i));
-					rect(11, -8 + 15 * i, 5, 5);
+					b = (currentView.currentParameter == AbstractBUGView.P_ACTIVITYFLAG && (currentView == snapshotView || i == currentView.currentValue)) ? 0 : 1;
+					rect(11 + b, -8 + 15 * i + b, 5 - 2 * b, 5 - 2 * b);
 				}
-
 				// value
 				fill(0, 120);
 				textAlign(LEFT);
@@ -454,7 +486,6 @@ public class BOMNetworkStatusApp extends PApplet {
 				// machine count
 				textAlign(RIGHT);
 				text((int) mgs.countByActivityFlag[i], 60, 15 * i);
-
 				// %
 				if (mg.machinecount > 0) {
 					fill(0, 60);
@@ -464,13 +495,20 @@ public class BOMNetworkStatusApp extends PApplet {
 						text("%", 90, 15 * i);
 					}
 				}
-
+				// tooltip
+				if (localMouse.x > 3 && localMouse.y > -12  + 15*i && localMouse.x < 90 && localMouse.y < 15*i + 4) {
+					parameterUnderMouse = AbstractBUGView.P_ACTIVITYFLAG;
+					tooltipText = BOMDictionary.activityFlagToHR(i, false, false);
+					parameterValueUnderMouse = i;
+				}
 			}
 			popMatrix();
 
 			// Connections
 			pushMatrix();
 			translate(0, 120);
+			localMouse.x += 145;
+			localMouse.y -= 120;
 			fill(120);
 			noStroke();
 			textAlign(LEFT);
@@ -478,8 +516,11 @@ public class BOMNetworkStatusApp extends PApplet {
 			textFont(selectedInfoFont);
 			translate(0, 16);
 			for (int i = 0; i < 4; i++) {
-				if (i == 2)
+				if (i == 2) {
 					translate(145, -30);
+					localMouse.x -= 145;
+					localMouse.y += 30;
+				}
 
 				// value
 				fill(0, 120);
@@ -488,6 +529,13 @@ public class BOMNetworkStatusApp extends PApplet {
 				// connections
 				textAlign(RIGHT);
 				text((int) mgs.connections[i], 90, 15 * (i));
+				
+				// tooltip
+				if (localMouse.x > 3 && localMouse.y > -12  + 15*i && localMouse.x < 90 && localMouse.y < 15*i + 4) {
+					parameterUnderMouse = AbstractBUGView.P_CONNECTIONS;
+					parameterValueUnderMouse = i;
+				}
+
 			}
 			popMatrix();
 
@@ -581,16 +629,18 @@ public class BOMNetworkStatusApp extends PApplet {
 
 				// Selected machine details
 				MachineDetails md = details.selectedMachineDetails;
-				if (md != null) {
-					tooltipText = IPConverter.intToStr(md.ipaddr);
-					tooltipText += "\n" + details.selectedColumnMachineSeq + " / " + details.selectedColumnMachineCount;
-					tooltipText += "\n" + "PS: " + BOMDictionary.policyStatusToHR(md.policyStatus, true);
-					tooltipText += "\n" + "AF: " + BOMDictionary.activityFlagToHR(md.activityFlag);
-					tooltipText += "\n" + "Connections: " + md.numConnections;
-
-				} else {
-					if (details.selectedColumnMachineCount >= 0 && mouseY > detailsClipper.getClippingRect().getMinY() + DetailsView.MARGIN_TOP) {
-						tooltipText = "Machines in column: " + details.selectedColumnMachineCount;
+				if (detailsClipper.getClippingRect().contains(mouseX, mouseY)) {
+					if (md != null) {
+						tooltipText = IPConverter.intToStr(md.ipaddr);
+						tooltipText += "\n" + details.selectedColumnMachineSeq + " / " + details.selectedColumnMachineCount;
+						tooltipText += "\n" + "PS: " + BOMDictionary.policyStatusToHR(md.policyStatus, true, true);
+						tooltipText += "\n" + "AF: " + BOMDictionary.activityFlagToHR(md.activityFlag);
+						tooltipText += "\n" + "Connections: " + md.numConnections;
+	
+					} else {
+						if (details.selectedColumnMachineCount >= 0 && mouseY > detailsClipper.getClippingRect().getMinY() + DetailsView.MARGIN_TOP) {
+							tooltipText = "Machines in column: " + details.selectedColumnMachineCount;
+						}
 					}
 				}
 				popMatrix();
@@ -607,17 +657,6 @@ public class BOMNetworkStatusApp extends PApplet {
 			}
 		}
 		popMatrix(); // Right shift - end
-
-		// Tooltip
-		if (tooltipText != null && detailsClipper.getClippingRect().contains(mouseX, mouseY)) {
-			textFont(bottomRowFont);
-			machineDetailsTT = new Tooltip(this, bottomRowFont, 12, textWidth(tooltipText) + 8);
-			machineDetailsTT.setAnchor(Direction.NORTH_WEST);
-
-			machineDetailsTT.setText(tooltipText);
-			machineDetailsTT.draw(Math.min(mouseX + 16, width - machineDetailsTT.getWidth() - 3), Math.min(mouseY + 20, height - machineDetailsTT.getHeight() - 3));
-			machineDetailsTT = null;
-		}
 	}
 
 	/* multi-key-press support */
@@ -652,16 +691,24 @@ public class BOMNetworkStatusApp extends PApplet {
 
 		// Businessunits in the grid order
 		if (checkKey("g") && keyCode >= '1' && keyCode <= '3') {
+			String text = null;
+			int l = 0;
 			if (keyCode == '1') {
-				businessunitGrid.setLayout(BusinessunitGrid.LAYOUT_SEQ);
-				flyingText.startFly("Arrange business units by name");
+				l = BusinessunitGrid.LAYOUT_SEQ;
+				text = "Arrange business units by name";
 			} else if (keyCode == '2') {
-				businessunitGrid.setLayout(BusinessunitGrid.LAYOUT_GEO);
-				flyingText.startFly("Arrange business units geographically");
+				l = BusinessunitGrid.LAYOUT_GEO;
+				text = "Arrange business units geographically";
 			} else {
-				businessunitGrid.setLayout(BusinessunitGrid.LAYOUT_GEO_EXCL_DC);
-				flyingText.startFly("Arrange business units geographically (with data centres in the bottom)");
+				l = BusinessunitGrid.LAYOUT_GEO_EXCL_DC;
+				text = "Arrange business units geographically (with data centres in the bottom)";
 			}
+			
+			if (businessunitGrid.getLayout() == l)
+				return;
+			
+			businessunitGrid.setLayout(l);
+			flyingText.startFly(text);
 			gridGraphicBuffer.setUpdateFlag();
 			return;
 		}
@@ -767,62 +814,46 @@ public class BOMNetworkStatusApp extends PApplet {
 		if (checkKey("a") || checkKey("c") || checkKey("p")) {
 			int parameter = -1;
 			int value = -1;
-			String text = "";
-			boolean needToResetRange = false;
 
+			// extracting parameter
+			if (checkKey("a")) {
+				parameter = AbstractBUGView.P_ACTIVITYFLAG;
+			} else if (checkKey("c")) {
+				if (currentView == overallView)
+					return;
+				
+				if (currentView == timeView && (value < 0 || value > 3))
+					return;
+				
+				parameter = AbstractBUGView.P_CONNECTIONS;
+			} else if (checkKey("p")) {
+				parameter = AbstractBUGView.P_POLICYSTATUS;
+			}
+			
+			// extracting value
 			if (keyCode >= '0' && keyCode <= '5')
 				value = keyCode - 0x30;
 			if (checkKey("c"))
 				--value;
 
-			if (checkKey("a")) {
-				parameter = AbstractBUGView.P_ACTIVITYFLAG;
-				text = "Activity flag";
-				if (currentView == timeView)
-					text += " = " + BOMDictionary.activityFlagToHR(value);
-				if (currentView.currentParameter == AbstractBUGView.P_CONNECTIONS)
-					needToResetRange = true;
-			} else if (checkKey("c")) {
-				if (currentView == overallView)
-					return;
-
-				if (currentView == timeView && (value < 0 || value > 3))
-					return;
-
-				parameter = AbstractBUGView.P_CONNECTIONS;
-				text = "Connections";
-				if (currentView == timeView)
-					text += " - " + BOMDictionary.connectionsToHR(value);
-				if (currentView.currentParameter != AbstractBUGView.P_CONNECTIONS)
-					needToResetRange = true;
-			} else if (checkKey("p")) {
-				parameter = AbstractBUGView.P_POLICYSTATUS;
-				text = "Policy status";
-				if (currentView == timeView)
-					text += " = " + BOMDictionary.policyStatusToHR(value);
-				if (currentView.currentParameter == AbstractBUGView.P_CONNECTIONS)
-					needToResetRange = true;
-			}
-
-			if (currentView == timeView && value == -1)
-				return;
-
 			if (parameter == -1)
 				return;
 
-			flyingText.startFly(text);
+			if (currentView == timeView) {
+				if (value == -1)
+					return;
+				switchViewParameter(parameter, value);
+			} else {
+				switchViewParameter(parameter);
+			}
 
-			currentView.currentParameter = parameter;
-			if (value != -1)
-				currentView.currentValue = value;
-			if (needToResetRange)
-				currentView.resetRange();
-			gridGraphicBuffer.setUpdateFlag();
+			
 			return;
 		}
 
 		// Choose machinegroup (all, atms, servers, workstations)
 		if (checkKey("m") && (keyCode >= '0' && keyCode <= '9' || keyLess || keySpace)) {
+			int oldMG = currentView.currentMachineGroup;
 			if (keySpace)
 				currentView.currentMachineGroup = 0;
 			else if (keyCode == '0')
@@ -831,6 +862,9 @@ public class BOMNetworkStatusApp extends PApplet {
 				currentView.currentMachineGroup = 3 + 8;
 			else
 				currentView.currentMachineGroup = keyCode - 0x30;
+			
+			if (currentView.currentMachineGroup == oldMG)
+				return;
 
 			flyingText.startFly("Machine group: " + BOMDictionary.machineGroupToHR(currentView.currentMachineGroup));
 			gridGraphicBuffer.setUpdateFlag();
@@ -1040,6 +1074,53 @@ public class BOMNetworkStatusApp extends PApplet {
 		}
 	}
 
+	protected void switchViewParameter(int parameter) {
+		switchViewParameter(parameter, -1);
+	}
+	
+	protected void switchViewParameter(int parameter, int value) {
+		String text = "";
+		boolean needToResetRange = false;
+
+		if (parameter == AbstractBUGView.P_ACTIVITYFLAG) {
+			text = "Activity flag";
+			if (currentView == timeView)
+				text += " = " + BOMDictionary.activityFlagToHR(value);
+			if (currentView.currentParameter == AbstractBUGView.P_CONNECTIONS)
+				needToResetRange = true;
+		} else if (parameter == AbstractBUGView.P_CONNECTIONS) {
+			if (currentView == overallView)
+				return;
+
+			if (currentView == timeView && (value < 0 || value > 3))
+				return;
+
+			text = "Connections";
+			if (currentView == timeView)
+				text += " - " + BOMDictionary.connectionsToHR(value);
+			if (currentView.currentParameter != AbstractBUGView.P_CONNECTIONS)
+				needToResetRange = true;
+		} else if (parameter == AbstractBUGView.P_POLICYSTATUS) {
+			text = "Policy status";
+			if (currentView == timeView)
+				text += " = " + BOMDictionary.policyStatusToHR(value);
+			if (currentView.currentParameter == AbstractBUGView.P_CONNECTIONS)
+				needToResetRange = true;
+		}
+
+		if (currentView.currentParameter == parameter && (value == -1 || value == currentView.currentValue))
+			return;
+		
+		currentView.currentParameter = parameter;
+		flyingText.startFly(text);
+
+		if (value != -1)
+			currentView.currentValue = value;
+		if (needToResetRange)
+			currentView.resetRange();
+		gridGraphicBuffer.setUpdateFlag();
+	}
+
 	public void keyReleased() {
 		if (loadStage < 42)
 			return;
@@ -1078,6 +1159,14 @@ public class BOMNetworkStatusApp extends PApplet {
 			return;
 
 		helpScreen.setIsActive(false);
+		
+		// Emulating change of parameter (call of key press) when user clicked on ps / af / c in facility info 
+		if (parameterUnderMouse != 0) {
+			if (currentView != timeView)
+				switchViewParameter(parameterUnderMouse);
+			else 
+				switchViewParameter(parameterUnderMouse, parameterValueUnderMouse);
+		}
 
 		if (gridClipper.getClippingRect().contains(mouseX, mouseY)) {
 			PVector mouseCoordWithOffset = new PVector(mouseX, mouseY);

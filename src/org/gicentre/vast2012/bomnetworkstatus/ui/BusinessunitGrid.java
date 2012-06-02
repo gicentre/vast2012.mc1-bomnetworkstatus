@@ -25,12 +25,18 @@ public class BusinessunitGrid {
 
 	protected HashMap<String, Businessunit> businessunits;
 	protected String[][] grid;
+	private int currentLayout;
 
 	public BusinessunitGrid(HashMap<String, Businessunit> businessunits, int layout) {
 
 		this.businessunits = businessunits;
 
 		setLayout(layout);
+	}
+
+	public int getLayout() {
+		// TODO Auto-generated method stub
+		return currentLayout;
 	}
 
 	/**
@@ -209,6 +215,8 @@ public class BusinessunitGrid {
 		} else {
 			throw new RuntimeException("Grod layout not implemented");
 		}
+		
+		currentLayout = layout;
 	}
 
 	/**
@@ -378,4 +386,5 @@ public class BusinessunitGrid {
 			bu.sortFacilities();
 		}
 	}
+
 }
