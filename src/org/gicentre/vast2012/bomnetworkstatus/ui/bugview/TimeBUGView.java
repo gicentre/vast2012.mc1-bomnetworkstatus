@@ -1,5 +1,6 @@
 package org.gicentre.vast2012.bomnetworkstatus.ui.bugview;
 
+import org.gicentre.utils.move.ZoomPanState;
 import org.gicentre.vast2012.bomnetworkstatus.Businessunit;
 import org.gicentre.vast2012.bomnetworkstatus.CompactTimestamp;
 import org.gicentre.vast2012.bomnetworkstatus.Facility;
@@ -15,7 +16,7 @@ public class TimeBUGView extends CommonBUGView {
 		super(grid);
 	}
 
-	public void drawBusinessunit(PGraphics canvas, String businessunitName, Thread thread) {
+	public void drawBusinessunit(PGraphics canvas, String businessunitName, ZoomPanState zps, Thread thread) {
 		float offsetX = bug.getColX(bug.getCol(businessunitName));
 		float offsetY = bug.getColY(bug.getRow(businessunitName));
 

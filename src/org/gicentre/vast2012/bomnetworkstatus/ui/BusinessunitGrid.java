@@ -28,9 +28,7 @@ public class BusinessunitGrid {
 	private int currentLayout;
 
 	public BusinessunitGrid(HashMap<String, Businessunit> businessunits, int layout) {
-
-		this.businessunits = businessunits;
-
+		setBusinessUnits(businessunits);
 		setLayout(layout);
 	}
 
@@ -39,6 +37,10 @@ public class BusinessunitGrid {
 		return currentLayout;
 	}
 
+	public void setBusinessUnits(HashMap<String, Businessunit> businessunits) {
+		this.businessunits = businessunits;
+	}
+	
 	/**
 	 * Rearranges the business units, ordering them by name or as a spatial tree map
 	 */

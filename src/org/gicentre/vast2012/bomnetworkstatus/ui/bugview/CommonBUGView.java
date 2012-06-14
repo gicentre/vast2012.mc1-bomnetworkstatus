@@ -2,8 +2,11 @@ package org.gicentre.vast2012.bomnetworkstatus.ui.bugview;
 
 import java.awt.Color;
 import java.awt.Font;
+import java.io.FileInputStream;
+import java.util.Properties;
 
 import org.gicentre.utils.colour.ColourTable;
+import org.gicentre.utils.move.ZoomPanState;
 import org.gicentre.vast2012.bomnetworkstatus.Businessunit;
 import org.gicentre.vast2012.bomnetworkstatus.Facility;
 import org.gicentre.vast2012.bomnetworkstatus.ui.BusinessunitGrid;
@@ -17,51 +20,84 @@ public abstract class CommonBUGView extends AbstractBUGView {
 	protected static PFont captionFont = new PFont(new Font("Helvetica", 0, 18), true);
 	protected static PFont legendFont1 = new PFont(new Font("Arial", 0, 12), true);
 	protected static PFont legendFont2 = new PFont(new Font("Arial", 0, 9), true);
-	
+
 	protected BusinessunitGrid bug;
 
 	ColourTable activityFlagCT;
 	ColourTable policyStatusCT;
 	ColourTable connectionCT;
 
-	protected static final int FILL_NODATA = 240; // Colour used when no data presents
+	protected static int FILL_NODATA = 0; // Colour used when no data presents
+	protected static float RELAXATION_RATE = 0; // Coefficient that makes colours more relaxed in the snapshot view
+	
 
 	public CommonBUGView(BusinessunitGrid grid) {
 		bug = grid;
 
 		// Initializing colour tables
 		if (activityFlagCT == null) {
-			activityFlagCT = new ColourTable();
-			activityFlagCT.addContinuousColourRule(0, Color.HSBtoRGB(0, 0, 0));
-			activityFlagCT.addContinuousColourRule(1, Color.HSBtoRGB(.57f, .8f, .8f));
-			activityFlagCT.addContinuousColourRule(2, Color.HSBtoRGB(.87f, .8f, .8f));
-			activityFlagCT.addContinuousColourRule(3, Color.HSBtoRGB(.67f, .8f, .8f));
-			activityFlagCT.addContinuousColourRule(4, Color.HSBtoRGB(.97f, .8f, .8f));
-			activityFlagCT.addContinuousColourRule(5, Color.HSBtoRGB(.77f, .8f, .8f));
+			Properties properties = new Properties();
+			try {
+				try {
+					properties.load(new FileInputStream("data/bomnetworkstatus_config.properties"));
+				} catch (Exception e) {
+					properties.load(new FileInputStream("bomnetworkstatus_config.properties"));
+				}
+			} catch (Exception e) {
+				System.err.println("Error opening config file with colours: " + e.getMessage());
+				System.exit(1);
+			}
 
+			String propertyName = null;
+			
+			try {
+				propertyName = "colours.nodata";
+				FILL_NODATA = Color.decode(properties.getProperty(propertyName)).getRGB();
+				propertyName = "colours.relaxation_rate";
+				RELAXATION_RATE = Float.parseFloat(properties.getProperty(propertyName));
+			} catch (Exception e) {
+				System.err.println("Error loading " + propertyName + ": " + properties.getProperty(propertyName)
+						+ ". Make sure the property is defined in config.properties and has a valid value.");
+				System.exit(1);
+			}
+			
+			activityFlagCT = new ColourTable();
+			for (int i = 0; i <= 5; i++) {
+				propertyName = "colours.activity_flag." + i;
+				try {
+					activityFlagCT.addContinuousColourRule(i, Color.decode(properties.getProperty(propertyName)).getRGB());
+				} catch (Exception e) {
+					System.err.println("Error loading colour " + propertyName + ": " + properties.getProperty(propertyName)
+							+ ". Make sure the property is defined in config.properties and has a valid value.");
+					System.exit(1);
+				}
+			}
 			policyStatusCT = new ColourTable();
-			policyStatusCT.addContinuousColourRule(0, Color.HSBtoRGB(0, 0, 0));
-			policyStatusCT.addContinuousColourRule(1, Color.HSBtoRGB(.33f, .8f, .6f));
-			policyStatusCT.addContinuousColourRule(2, Color.HSBtoRGB(.22f, .8f, .6f));
-			policyStatusCT.addContinuousColourRule(3, Color.HSBtoRGB(.16f, .8f, .6f));
-			policyStatusCT.addContinuousColourRule(4, Color.HSBtoRGB(.10f, .8f, .6f));
-			policyStatusCT.addContinuousColourRule(5, Color.HSBtoRGB(.00f, .8f, .6f));
+			for (int i = 0; i <= 5; i++) {
+				propertyName = "colours.policy_status." + i;
+				try {
+					policyStatusCT.addContinuousColourRule(i, Color.decode(properties.getProperty(propertyName)).getRGB());
+				} catch (Exception e) {
+					System.err.println("Error loading colour " + propertyName + ": " + properties.getProperty(propertyName)
+							+ ". Make sure the property is defined in config.properties and has a valid value.");
+					System.exit(1);
+				}
+			}
 
 			connectionCT = new ColourTable();
 			connectionCT.addContinuousColourRule(0, Color.HSBtoRGB(0, 0, 0));
-
 		}
 	}
 
 	/**
 	 * {@inheritDoc}
 	 */
-	public void draw(PGraphics canvas, Thread thread) {
+	public void draw(PGraphics canvas, ZoomPanState zps, Thread thread) {
 		drawLayout(canvas);
 		for (int i = 0; i < bug.getColCount(); i++)
 			for (int j = 0; j < bug.getRowCount(); j++)
 				if (bug.getBusinessunitNameAt(i, j) != null)
-					drawBusinessunit(canvas, bug.getBusinessunitNameAt(i, j), thread);
+					drawBusinessunit(canvas, bug.getBusinessunitNameAt(i, j), zps, thread);
 		drawLabels(canvas);
 	}
 
@@ -188,8 +224,6 @@ public abstract class CommonBUGView extends AbstractBUGView {
 		}
 	}
 
-	protected abstract void drawBusinessunit(PGraphics canvas, String businessunitName, Thread thread);
-
 	public int getColour(int parameter, int value) {
 		return getColour(parameter, value, true);
 	}
@@ -209,7 +243,7 @@ public abstract class CommonBUGView extends AbstractBUGView {
 		}
 
 		if (relaxed)
-			return PApplet.lerpColor(ct.findColour(value), 0xffffffff, 0.4f, PApplet.BLEND);
+			return PApplet.lerpColor(ct.findColour(value), 0xffffffff, RELAXATION_RATE, PApplet.BLEND);
 		else
 			return ct.findColour(value);
 	}
@@ -217,13 +251,14 @@ public abstract class CommonBUGView extends AbstractBUGView {
 	public int getConnectionsColour(PGraphics canvas, int numConnections) {
 		double cRangeMin = 0;
 		double cRangeMax = 120;
-		
+
 		if (currentParameter == P_CONNECTIONS) {
 			cRangeMin = rangeMin;
 			cRangeMax = rangeMax;
 		}
-		
-		return  canvas.lerpColor(0xffffffff, getColour(AbstractBUGView.P_CONNECTIONS, 0, false),  (float)Math.min(1, Math.max(0, (numConnections) - cRangeMin) / (cRangeMax - cRangeMin)));
+
+		return canvas.lerpColor(0xffffffff, getColour(AbstractBUGView.P_CONNECTIONS, 0, false),
+				(float) Math.min(1, Math.max(0, (numConnections) - cRangeMin) / (cRangeMax - cRangeMin)));
 	}
 
 	public boolean selectNeighbourFacility(int diff) {
@@ -338,7 +373,7 @@ public abstract class CommonBUGView extends AbstractBUGView {
 		int avgX = 80;
 		int sdX = 32;
 
-		canvas.textFont(legendFont2);	
+		canvas.textFont(legendFont2);
 		canvas.textAlign(PGraphics.LEFT);
 		canvas.text("min", minX, 12);
 		canvas.textAlign(PGraphics.CENTER);
@@ -346,14 +381,13 @@ public abstract class CommonBUGView extends AbstractBUGView {
 		canvas.textAlign(PGraphics.RIGHT);
 		canvas.text("sd", avgX + sdX, 12);
 		canvas.text("max", maxX, 12);
-		
-		
+
 		// Min - Max
 		float minXCorrected = Math.max(Math.min(minX, 191), 0);
 		float maxXCorrected = Math.max(Math.min(maxX, 191), 0);
 		canvas.fill(230);
 		canvas.rect(minXCorrected, 16, maxXCorrected - minXCorrected, 3);
-		
+
 		// Sd
 		canvas.fill(200);
 		int sdLeft = Math.max(Math.min(avgX - sdX, 191), 0);
@@ -363,7 +397,7 @@ public abstract class CommonBUGView extends AbstractBUGView {
 		// Avg
 		canvas.fill(0);
 		canvas.rect(Math.max(Math.min(avgX, 191), 0), 16, 1, 3);
-		
+
 		canvas.popMatrix();
 	}
 

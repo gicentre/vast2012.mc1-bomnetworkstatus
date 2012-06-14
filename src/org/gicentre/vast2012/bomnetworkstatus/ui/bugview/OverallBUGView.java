@@ -1,5 +1,6 @@
 package org.gicentre.vast2012.bomnetworkstatus.ui.bugview;
 
+import org.gicentre.utils.move.ZoomPanState;
 import org.gicentre.vast2012.bomnetworkstatus.Businessunit;
 import org.gicentre.vast2012.bomnetworkstatus.CompactTimestamp;
 import org.gicentre.vast2012.bomnetworkstatus.Facility;
@@ -15,7 +16,7 @@ public class OverallBUGView extends CommonBUGView {
 		super(grid);
 	}
 
-	public void drawBusinessunit(PGraphics canvas, String businessunitName, Thread thread) {
+	public void drawBusinessunit(PGraphics canvas, String businessunitName, ZoomPanState zps, Thread thread) {
 		float offsetX = bug.getColX(bug.getCol(businessunitName));
 		float offsetY = bug.getColY(bug.getRow(businessunitName));
 
@@ -37,7 +38,7 @@ public class OverallBUGView extends CommonBUGView {
 
 				int values[] = new int[6];
 				int total = 0;
-				int requiredHeight = bug.getBusinessunitHeight(bu) - 1;
+				double requiredHeight = bug.getBusinessunitHeight(bu) - 1;
 
 				for (Facility f : bu.sortedFacilities) {
 					MachineGroup mg = f.machinegroups[currentMachineGroup];
@@ -54,16 +55,16 @@ public class OverallBUGView extends CommonBUGView {
 				}
 
 				if (total > 0) {
-					int[] heightInPx = new int[6];
+					double[] heightInPx = new double[6];
 
 					int iOfMaxHeight = 0;
-					int maxHeight = 0;
-					int sumHeight = 0;
-					int currentValue = 0;
+					double maxHeight = 0;
+					double sumHeight = 0;
+					double currentValue = 0;
 
 					for (int i = 0; i <= 5; i++) {
 						currentValue = currentParameter == P_ACTIVITYFLAG ? values[i] : values[i];
-						heightInPx[i] = (int) Math.round(requiredHeight * 1f * currentValue / total);
+						heightInPx[i] = requiredHeight *  currentValue / total;
 						// Making sure there is at least 1 px if there is at least 1 machine having such value
 						if (heightInPx[i] == 0 && currentValue > 0)
 							heightInPx[i] = 1;
@@ -80,11 +81,11 @@ public class OverallBUGView extends CommonBUGView {
 						heightInPx[iOfMaxHeight] -= sumHeight - requiredHeight;
 
 					// Drawing the bars
-					int offsetY2 = 0;
-					int offsetX2 = t;
+					double offsetY2 = 0;
+					double offsetX2 = t;
 					for (int i = 0; i <= 5; i++) {
 						canvas.fill(getColour(currentParameter, 5-i));
-						canvas.rect(offsetX + offsetX2, offsetY + offsetY2, 1, heightInPx[5-i]);
+						canvas.rect((float)(offsetX + offsetX2), (float)(offsetY + offsetY2), 1, (float)heightInPx[5-i]);
 						offsetY2 += heightInPx[5-i];
 					}
 				}

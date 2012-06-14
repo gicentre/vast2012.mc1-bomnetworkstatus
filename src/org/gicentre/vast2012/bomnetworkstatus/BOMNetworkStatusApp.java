@@ -99,7 +99,37 @@ public class BOMNetworkStatusApp extends PApplet {
 		
 		background(255);
 		switch (loadStage++) {
+
 		case 0:
+			// Preparing the grid
+			businessunitGrid = new BusinessunitGrid(null, BusinessunitGrid.LAYOUT_SEQ);
+
+			// Snapshot view
+			snapshotView = new SnapshotBUGView(businessunitGrid);
+			snapshotView.currentParameter = AbstractBUGView.P_POLICYSTATUS;
+			snapshotView.currentCompactTimestamp = CompactTimestamp.fullTimestampToCompact("2012-02-02 14:00:00");
+			snapshotView.selectedCompactTimestamp = snapshotView.currentCompactTimestamp;
+			snapshotView.resetRange();
+
+			// Time view
+			timeView = new TimeBUGView(businessunitGrid);
+			timeView.currentParameter = AbstractBUGView.P_POLICYSTATUS;
+			timeView.currentValue = 1;
+			timeView.currentCompactTimestamp = CompactTimestamp.fullTimestampToCompact("2012-02-04 08:00:00");
+			timeView.resetRange();
+
+			// Overall view
+			overallView = new OverallBUGView(businessunitGrid);
+			overallView.currentParameter = AbstractBUGView.P_POLICYSTATUS;
+			overallView.currentValue = 1;
+			overallView.currentCompactTimestamp = CompactTimestamp.fullTimestampToCompact("2012-02-04 08:00:00");
+			overallView.resetRange();
+
+			currentView = snapshotView;
+
+			return;
+			
+		case 1:
 			helpScreen = new HelpScreen(this, createFont("Helvetica", 12));
 			helpScreen.setBackgroundColour(0xf0fffb9d);
 			helpScreen.setIsActive(true);
@@ -144,17 +174,18 @@ public class BOMNetworkStatusApp extends PApplet {
 							"View details of the next / previous facility in the business unit, when one is selected (press with SHIFT to jump over 5 facilities; with CONTROL to go to first / last facility)");
 
 			return;
-		case 1:
+		case 2:
 			// Starting loading the data
 			dataLoader = new DataLoader();
 			return;
 
-		case 2:
+		case 3:
 			// Not going to the next loadStage until the loader reports that everything's loaded
 			helpScreen.draw();
 
 			if (dataLoader.ready == true) {
 				businessunits = dataLoader.businessunits;
+				businessunitGrid.setBusinessUnits(businessunits);
 				dataLoader.interrupt();
 				dataLoader = null;
 				return;
@@ -167,32 +198,7 @@ public class BOMNetworkStatusApp extends PApplet {
 			--loadStage;
 			return;
 
-		case 3:
-			// Preparing the grid and the graphic buffer
-			businessunitGrid = new BusinessunitGrid(businessunits, BusinessunitGrid.LAYOUT_SEQ);
-
-			// Snapshot view
-			snapshotView = new SnapshotBUGView(businessunitGrid);
-			snapshotView.currentParameter = AbstractBUGView.P_POLICYSTATUS;
-			snapshotView.currentCompactTimestamp = CompactTimestamp.fullTimestampToCompact("2012-02-02 14:00:00");
-			snapshotView.selectedCompactTimestamp = snapshotView.currentCompactTimestamp;
-			snapshotView.resetRange();
-
-			// Time view
-			timeView = new TimeBUGView(businessunitGrid);
-			timeView.currentParameter = AbstractBUGView.P_POLICYSTATUS;
-			timeView.currentValue = 1;
-			timeView.currentCompactTimestamp = CompactTimestamp.fullTimestampToCompact("2012-02-04 08:00:00");
-			timeView.resetRange();
-
-			// Overall view
-			overallView = new OverallBUGView(businessunitGrid);
-			overallView.currentParameter = AbstractBUGView.P_POLICYSTATUS;
-			overallView.currentValue = 1;
-			overallView.currentCompactTimestamp = CompactTimestamp.fullTimestampToCompact("2012-02-04 08:00:00");
-			overallView.resetRange();
-
-			currentView = snapshotView;
+		case 4:
 
 			// Grid
 			gridClipper = new Clipper(this, new Rectangle(0, 35, (int) businessunitGrid.getWidth(), (int) businessunitGrid.getHeight()));
@@ -1227,7 +1233,7 @@ public class BOMNetworkStatusApp extends PApplet {
 			canvas.pushMatrix();
 			zoomPanState.transform(canvas);
 			canvas.translate((float) gridClipper.getClippingRect().getMinX(), (float) gridClipper.getClippingRect().getMinY());
-			currentView.draw(canvas, Thread.currentThread());
+			currentView.draw(canvas, zoomPanState, Thread.currentThread());
 			canvas.popMatrix();
 		}
 	}

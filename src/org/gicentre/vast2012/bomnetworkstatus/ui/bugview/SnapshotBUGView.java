@@ -1,5 +1,6 @@
 package org.gicentre.vast2012.bomnetworkstatus.ui.bugview;
 
+import org.gicentre.utils.move.ZoomPanState;
 import org.gicentre.vast2012.bomnetworkstatus.Businessunit;
 import org.gicentre.vast2012.bomnetworkstatus.CompactTimestamp;
 import org.gicentre.vast2012.bomnetworkstatus.Facility;
@@ -15,7 +16,7 @@ public class SnapshotBUGView extends CommonBUGView {
 		super(grid);
 	}
 
-	public void drawBusinessunit(PGraphics canvas, String businessunitName, Thread thread) {
+	public void drawBusinessunit(PGraphics canvas, String businessunitName, ZoomPanState zps, Thread thread) {
 		float offsetX = bug.getColX(bug.getCol(businessunitName));
 		float offsetY = bug.getColY(bug.getRow(businessunitName));
 
@@ -50,21 +51,24 @@ public class SnapshotBUGView extends CommonBUGView {
 					canvas.noStroke();
 					if (currentParameter == P_ACTIVITYFLAG || currentParameter == P_POLICYSTATUS) {
 						// Activity flag / policy status
-						int offsetX2 = 0;
+						double offsetX2 = 0;
 
 						if (mgs != null && mg.machinecount > 0) {
 							// Calculating widths of bars
-							int[] widthInPx = new int[6];
+							double[] widthInPx = new double[6];
 							int iOfMaxWidth = 0;
-							int maxWidth = 0;
-							int sumWidth = 0;
-							int currentValue = 0;
+							double maxWidth = 0;
+							double sumWidth = 0;
+							double currentValue = 0;
+							
+							double minWidthInPixels = 1/zps.getZoomScale();
+							
 							for (int i = 0; i <= 5; i++) {
 								currentValue = currentParameter == P_ACTIVITYFLAG ? mgs.countByActivityFlag[i] : mgs.countByPolicyStatus[i];
-								widthInPx[i] = (int) Math.round(BusinessunitGrid.COL_WIDTH * 1f * currentValue / mg.machinecount);
+								widthInPx[i] = BusinessunitGrid.COL_WIDTH * currentValue / mg.machinecount;
 								// Making sure there is at least 1 px if there is at least 1 machine having such value
-								if (widthInPx[i] == 0 && currentValue > 0)
-									widthInPx[i] = 1;
+								if (widthInPx[i] < minWidthInPixels && currentValue > 0)
+									widthInPx[i] = minWidthInPixels;
 
 								sumWidth += widthInPx[i];
 								if (widthInPx[i] > maxWidth) {
@@ -80,16 +84,16 @@ public class SnapshotBUGView extends CommonBUGView {
 							// Drawing the bars
 							for (int i = 0; i <= 5; i++) {
 								canvas.fill(getColour(currentParameter, i));
-								canvas.rect(offsetX + offsetX2, offsetY + currentY, widthInPx[i], currentFacilityHeight);
+								canvas.rect((float)(offsetX + offsetX2), (float)(offsetY + currentY), (float)widthInPx[i], currentFacilityHeight);
 								offsetX2 += widthInPx[i];
 							}
 						}
 					} else {
 						// Connections
-						int minX = (int) ((mgs.connections[2] - rangeMin) / (rangeMax - rangeMin) * 192);
-						int maxX = (int) ((mgs.connections[3] - rangeMin) / (rangeMax - rangeMin) * 192);
-						int avgX = (int) ((mgs.connections[0] - rangeMin) / (rangeMax - rangeMin) * 192);
-						int sdX = (int) ((mgs.connections[1]) / (rangeMax - rangeMin) * 192);
+						float minX = (float) ((mgs.connections[2] - rangeMin) / (rangeMax - rangeMin) * 192);
+						float maxX = (float) ((mgs.connections[3] - rangeMin) / (rangeMax - rangeMin) * 192);
+						float avgX = (float) ((mgs.connections[0] - rangeMin) / (rangeMax - rangeMin) * 192);
+						float sdX = (float) ((mgs.connections[1]) / (rangeMax - rangeMin) * 192);
 
 						// Min - Max
 						float minXCorrected = offsetX + Math.max(Math.min(minX, 191), 0);
@@ -99,8 +103,8 @@ public class SnapshotBUGView extends CommonBUGView {
 						
 						// Sd
 						canvas.fill(200);
-						int sdLeft = Math.max(Math.min(avgX - sdX, 191), 0);
-						int sdRight = Math.max(Math.min(avgX + sdX, 191), 0);
+						float sdLeft = Math.max(Math.min(avgX - sdX, 191), 0);
+						float sdRight = Math.max(Math.min(avgX + sdX, 191), 0);
 						canvas.rect(offsetX + sdLeft, offsetY + currentY, sdRight - sdLeft, currentFacilityHeight);
 
 						// Avg

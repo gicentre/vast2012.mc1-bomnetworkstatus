@@ -1,6 +1,8 @@
 package org.gicentre.vast2012.bomnetworkstatus.ui.bugview;
 
 import processing.core.PGraphics;
+
+import org.gicentre.utils.move.ZoomPanState;
 import org.gicentre.vast2012.bomnetworkstatus.Facility;
 
 public abstract class AbstractBUGView {
@@ -41,7 +43,9 @@ public abstract class AbstractBUGView {
 	 * @param thread The thread the drawing is done in, can be null
 	 *        If the thread becomes interrupted, it is possible to break the drawing too.
 	 */
-	public abstract void draw(PGraphics canvas, Thread thread);
+	public abstract void draw(PGraphics canvas, ZoomPanState zps, Thread thread);
+
+	public abstract void drawBusinessunit(PGraphics canvas, String businessunitName, ZoomPanState zps, Thread thread);
 
 	/**
 	 * Sets facility and time stamp that are located at x and y focused
