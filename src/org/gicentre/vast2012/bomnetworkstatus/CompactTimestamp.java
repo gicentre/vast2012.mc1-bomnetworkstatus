@@ -10,6 +10,7 @@ import java.util.Date;
  *                1 on 2012-02-02 at 08:30:00 BMT
  *                2 on 2012-02-02 at 08:45:00 BMT
  * and so on (+1 every 15 minutes)
+ * The class is static (no constructor) 
  */
 public class CompactTimestamp {
 

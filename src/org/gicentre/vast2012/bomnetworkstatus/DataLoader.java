@@ -5,6 +5,9 @@ import java.util.HashMap;
 
 import processing.core.PApplet;
 
+/**
+ * Loads data about facilities and facility statuses from csv files
+ */
 public class DataLoader extends Thread {
 	
 	HashMap<String, Businessunit> businessunits;

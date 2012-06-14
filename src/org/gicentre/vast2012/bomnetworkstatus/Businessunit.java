@@ -24,7 +24,7 @@ public class Businessunit {
 
 	/**
 	 * Returns the value of the number in the business unit name (for regions only).
-	 * Examples: "region-1" → 42
+	 * Examples: "region-42" → 42
 	 *           "headquarters" → 0
 	 */
 	public static int extractIdFromName(String businessunitName) {

@@ -83,7 +83,6 @@ public class BOMNetworkStatusApp extends PApplet {
 	private String tooltipText;
 
 	private int parameterUnderMouse;
-
 	private int parameterValueUnderMouse;
 
 	@SuppressWarnings("deprecation")
@@ -151,6 +150,7 @@ public class BOMNetworkStatusApp extends PApplet {
 			return;
 
 		case 2:
+			// Not going to the next loadStage until the loader reports that everything's loaded
 			helpScreen.draw();
 
 			if (dataLoader.ready == true) {
@@ -194,6 +194,7 @@ public class BOMNetworkStatusApp extends PApplet {
 
 			currentView = snapshotView;
 
+			// Grid
 			gridClipper = new Clipper(this, new Rectangle(0, 35, (int) businessunitGrid.getWidth(), (int) businessunitGrid.getHeight()));
 			gridZoomPan = new ZoomPan(this);
 			gridZoomPan.setMinZoomScale(1);
@@ -204,8 +205,8 @@ public class BOMNetworkStatusApp extends PApplet {
 			gridGraphicBuffer.setUpdateDuringZoomPan(false);
 			gridGraphicBuffer.setUseFadeEffect(true, 20);
 
+			// Details
 			details = new DetailsView();
-			
 			detailsClipper = new Clipper(this, new Rectangle((int) gridClipper.getClippingRect().getMaxX() + 30, DETAILS_Y, (int)(width  
 					- (int) gridClipper.getClippingRect().getMaxX() - 55), (int) gridClipper.getClippingRect().getMaxY() - DETAILS_Y));
 			detailsZoomPan = new ZoomPan(this);
@@ -228,6 +229,7 @@ public class BOMNetworkStatusApp extends PApplet {
 			return;
 		}
 
+		// Loading complete
 		loadStage = 42;
 		tooltipText = null;
 		parameterUnderMouse = 0;
@@ -349,6 +351,9 @@ public class BOMNetworkStatusApp extends PApplet {
 		popMatrix();
 	}
 
+	/**
+	 * Draws everyting in the right column
+	 */
 	protected void drawSelectedFacilityInfo() {
 		if (currentView == overallView)
 			return;
@@ -1214,7 +1219,7 @@ public class BOMNetworkStatusApp extends PApplet {
 		
 	}
 
-	// Class that implements ThreadedDraw for drawing in a different thread
+	// Class that implements ThreadedDraw for drawing in a different thread for the grid
 	class GridThreadedDraw implements ThreadedDraw {
 
 		// Code to draw onto the buffer
@@ -1227,6 +1232,7 @@ public class BOMNetworkStatusApp extends PApplet {
 		}
 	}
 
+	// Class that implements ThreadedDraw for drawing in a different thread for details
 	class DetailsThreadedDraw implements ThreadedDraw {
 
 		// Code to draw onto the buffer
@@ -1239,5 +1245,4 @@ public class BOMNetworkStatusApp extends PApplet {
 			mouseMoved();
 		}
 	}
-
 }
