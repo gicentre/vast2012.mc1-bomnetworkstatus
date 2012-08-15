@@ -54,6 +54,9 @@ public class DataLoader extends Thread {
 
 			// Reading facilities info
 			reader = helperApplet.createReader("facility.tab");
+			if (reader == null) {
+				System.exit(1);
+			}
 			reader.readLine(); // Skipping the first line with headers
 
 			int l = 0;
@@ -108,6 +111,9 @@ public class DataLoader extends Thread {
 
 			// Reading statuses for all facilities
 			reader = helperApplet.createReader("facilitystatus.tab");
+			if (reader == null) {
+				System.exit(1);
+			}
 			reader.readLine(); // Skipping the first line with headers
 
 			char currentValue;
