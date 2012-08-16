@@ -1,4 +1,4 @@
-#VAST 2012 Challenge MC1 Entry by giCentre, City University London
+#VAST 2012 Challenge MC1 Entry by giCentre, City University London
 #### Award: “Efficient Use of Visualization”
 
 Description
@@ -9,7 +9,7 @@ See http://gicentre.org/vast2012/
 Licence
 -------
 Application source code is released under under GNU Lesser General Public License.
-See COPYING.LESSER included in `src/` or http://www.gnu.org/licenses/
+See COPYING.LESSER included in `src/` or http://www.gnu.org/licenses/
 
 Installation
 ------------
@@ -25,7 +25,7 @@ Alternatively, you can try to download the source code and rebuild the app. This
     * __Postgres JDBC__ http://jdbc.postgresql.org/
 * Run `org.gicentre.vast2012.bomnetworkstatus.BOMNetworkStatusApp` as Java Application with `-Xmx2048M` in the list of Java VM arguments.
 
-**Note**: Regardless of the installation method, it will not be possible to see individual machine details in the right column — such feature requires local Postgres database (≈15GB in size). However, the application can still work with some limitations without it. Full dump of the required database (different from the one given as challenge input) is available upon request.
+**Note**: Regardless of the installation method, it will not be possible to see individual machine details in the right column — such feature requires local Postgres database (≈15GB). However, the application can still work with some limitations only using csv files  with aggregated statistics in `data/` directory. Full dump of the database, which is different from the one given as challenge input data, is available upon request (≈1.4GB).
 
 Changelog
 ---------
