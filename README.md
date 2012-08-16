@@ -1,7 +1,7 @@
 #VAST 2012 Challenge MC1 Entry by giCentre, City University London
 #### Award: “Efficient Use of Visualization”
 
-![Application screenshot](screenshot.png)
+![Application screenshot](//github.com/gicentre/vast2012.mc1-bomnetworkstatus/raw/master/screenshot.png)
 
 Description
 -----------
