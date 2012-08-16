@@ -1,5 +1,7 @@
-#VAST 2012 Challenge MC1 Entry by giCentre, City University London
+#VAST 2012 Challenge MC1 Entry by giCentre, City University London
 #### Award: “Efficient Use of Visualization”
+
+![Application screenshot](screenshot.png)
 
 Description
 -----------
@@ -13,7 +15,7 @@ See COPYING.LESSER included in `src/` or http://www.gnu.org/licenses/
 
 Installation
 ------------
-The easiest way to install the application is to compiled version as an archive from http://gicentre.org/vast2012/ and run `bomnetworkstatus.bat` or `bomnetworkstatus.sh` depending on your operating system (JRE 1.6 is required). It is recommended to launch the app on a machine having least 2GB of RAM.
+The easiest way to install the application is to download compiled version as an archive from http://gicentre.org/vast2012/ and run `bomnetworkstatus.bat` or `bomnetworkstatus.sh` depending on your operating system (JRE 1.6 is required). It is recommended to launch the app on a machine having least 3GB of RAM.
 
 Alternatively, you can try to download the source code and rebuild the app. This implies the following steps:
 
